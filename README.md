@@ -88,7 +88,7 @@ you how to connect your apps. AI tools can also install, start and stop Strata t
 ### Or do it yourself
 
 [Download Strata](https://github.com/Niko1221/Strata/archive/refs/heads/main.zip) and unzip it (or `git clone` it).
-**Windows:** double-click **`START-HERE.bat`**. **Linux:** run **`./setup.sh`** in the Strata folder.
+**Windows:** double-click **`STRATA.bat`**. **Linux:** run **`./STRATA.sh`** in the Strata folder.
 
 The steps are the same for NVIDIA and AMD. The installer finds your card and sets up the right engine for it. It
 asks you a few questions:
@@ -105,8 +105,8 @@ download stops, run it again: it continues where it left off. Your browser opens
 > Strata loads 35-55 GB into your RAM and locks part of it for the graphics card. This is normal. Wait, and don't
 > close the window. The window shows what Strata is doing.
 
-**Next time**, run `START-HERE.bat` (or `./setup.sh`) again. It starts right away and downloads nothing twice. Close
-its window to stop the model. `UPDATE.bat` (`./update.sh`) updates Strata without starting it. Updating, Docker,
+**Next time**, run `STRATA.bat` (or `./STRATA.sh`) again. It starts right away and downloads nothing twice. Close
+its window to stop the model. `STRATA.bat --update` (`./STRATA.sh --update`) updates Strata without starting it. Updating, Docker,
 several cards, where the files go and every option: [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Which model should I pick?
@@ -135,7 +135,7 @@ sizes are faster. Larger sizes are a bit smarter.
   not in the installer's menu.
 
 Sizes, downloads and what fits where: [docs/MODELS.md](docs/MODELS.md). To add another model later, run
-`SETUP.bat` (Linux: `./setup.sh --setup`).
+`STRATA.bat --setup` (Linux: `./STRATA.sh --setup`).
 
 ## Using it
 
@@ -154,7 +154,7 @@ Sizes, downloads and what fits where: [docs/MODELS.md](docs/MODELS.md). To add a
   fastest. High is best for hard questions.
 - **Pictures:** say yes to "Images?" in setup. Then click **Picture** in the chat, or attach pictures in your app.
   AMD cards read pictures on Linux through the processor; on Windows they can't yet.
-- **From your phone or another PC:** `START-HERE.bat --setup --host 0.0.0.0 --api-key <secret>`. Always set a key.
+- **From your phone or another PC:** `STRATA.bat --setup --host 0.0.0.0 --api-key <secret>`. Always set a key.
 - **One request at a time:** by default Strata answers one request, and the others wait. To answer several at once,
   set `"parallel": 2` ([BATCHING.md](docs/BATCHING.md)). On a 12 GB card this makes each answer slower.
 - **Long prompts:** Strata reads the first message of a chat in full, about 1 minute per 30,000 tokens. Follow-up
@@ -166,7 +166,7 @@ More: [where your chats are stored](docs/INSTALL.md#where-things-are-stored), [t
 
 - **My PC froze the first time Strata started.** This is normal while it loads the model. Wait, and don't close the
   window. Still frozen after 10 minutes? Restart the PC, close other programs and try again, or pick a smaller size.
-- **It stopped while downloading or installing.** Run `START-HERE.bat` (or `./setup.sh`) again. It continues where
+- **It stopped while downloading or installing.** Run `STRATA.bat` (or `./STRATA.sh`) again. It continues where
   it stopped.
 - **It's very slow and the disk light keeps blinking, or it says "the engine stopped unexpectedly".** Your PC does
   not have enough free RAM. Close other programs (browsers use a lot), or pick a smaller size (Q2_0 or IQ2_XS).

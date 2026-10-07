@@ -90,7 +90,7 @@ startet er es und sagt dir, wie du deine Apps verbindest. KI-Tools können Strat
 ### Oder mach es selbst
 
 [Lade Strata herunter](https://github.com/Niko1221/Strata/archive/refs/heads/main.zip) und entpacke es (oder nutze
-`git clone`). **Windows:** Doppelklick auf **`START-HERE.bat`**. **Linux:** Führe im Strata-Ordner **`./setup.sh`** aus.
+`git clone`). **Windows:** Doppelklick auf **`STRATA.bat`**. **Linux:** Führe im Strata-Ordner **`./STRATA.sh`** aus.
 
 Die Schritte sind für NVIDIA und AMD gleich. Der Installer erkennt deine Karte und richtet die passende Engine
 dafür ein. Er stellt dir ein paar Fragen:
@@ -107,8 +107,8 @@ startet es. Bricht der Download ab, starte ihn einfach neu: Er macht dort weiter
 > längsten). Strata lädt 35-55 GB in deinen RAM und reserviert einen Teil davon für die Grafikkarte. Das ist normal.
 > Warte und schließ das Fenster nicht. Im Fenster siehst du, was Strata gerade tut.
 
-**Beim nächsten Mal** startest du wieder `START-HERE.bat` (oder `./setup.sh`). Es startet sofort und lädt nichts
-doppelt herunter. Schließ das Fenster, um das Modell zu stoppen. `UPDATE.bat` (`./update.sh`) aktualisiert Strata,
+**Beim nächsten Mal** startest du wieder `STRATA.bat` (oder `./STRATA.sh`). Es startet sofort und lädt nichts
+doppelt herunter. Schließ das Fenster, um das Modell zu stoppen. `STRATA.bat --update` (`./STRATA.sh --update`) aktualisiert Strata,
 ohne es zu starten. Updates, Docker, mehrere Karten, wo die Dateien landen und alle Optionen:
 [docs/INSTALL.md](docs/INSTALL.md).
 
@@ -140,7 +140,7 @@ stark komprimiert. Kleinere Größen sind schneller. Größere sind etwas klüge
   ein. Es steht nicht im Menü des Installers.
 
 Größen, Downloads und was wohin passt: [docs/MODELS.md](docs/MODELS.md). Um später ein weiteres Modell
-hinzuzufügen, starte `SETUP.bat` (Linux: `./setup.sh --setup`).
+hinzuzufügen, starte `STRATA.bat --setup` (Linux: `./STRATA.sh --setup`).
 
 ## So benutzt du es
 
@@ -159,7 +159,7 @@ hinzuzufügen, starte `SETUP.bat` (Linux: `./setup.sh --setup`).
   App. Aus ist am schnellsten. Hoch ist am besten für schwierige Fragen.
 - **Bilder:** Antworte im Setup mit Ja auf „Images?“. Klick dann im Chat auf **Picture** oder hänge Bilder in deiner
   App an. AMD-Karten lesen Bilder unter Linux über den Prozessor; unter Windows geht das noch nicht.
-- **Vom Handy oder einem anderen PC:** `START-HERE.bat --setup --host 0.0.0.0 --api-key <secret>`. Setz immer einen
+- **Vom Handy oder einem anderen PC:** `STRATA.bat --setup --host 0.0.0.0 --api-key <secret>`. Setz immer einen
   Key.
 - **Eine Anfrage nach der anderen:** Standardmäßig beantwortet Strata eine Anfrage, die anderen warten. Um mehrere
   gleichzeitig zu beantworten, setz `"parallel": 2` ([BATCHING.md](docs/BATCHING.md)). Auf einer 12-GB-Karte wird
@@ -174,7 +174,7 @@ Mehr: [wo deine Chats gespeichert werden](docs/INSTALL.md#where-things-are-store
 - **Mein PC ist beim ersten Start von Strata eingefroren.** Das ist normal, während das Modell lädt. Warte und
   schließ das Fenster nicht. Nach 10 Minuten immer noch eingefroren? Starte den PC neu, schließ andere Programme und
   versuch es noch einmal, oder nimm eine kleinere Größe.
-- **Es hat beim Herunterladen oder Installieren aufgehört.** Starte `START-HERE.bat` (oder `./setup.sh`) noch
+- **Es hat beim Herunterladen oder Installieren aufgehört.** Starte `STRATA.bat` (oder `./STRATA.sh`) noch
   einmal. Es macht dort weiter, wo es aufgehört hat.
 - **Es ist sehr langsam und die Festplattenlampe blinkt ständig, oder es meldet „the engine stopped
   unexpectedly“.** Dein PC hat nicht genug freien RAM. Schließ andere Programme (Browser brauchen viel) oder nimm

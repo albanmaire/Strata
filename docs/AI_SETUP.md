@@ -26,8 +26,8 @@ The quickest way is setup's own check, which prints the GPU(s), driver, RAM, CPU
 Strata, and installs nothing except Python and the `.venv` it needs to run (step 2 gets the repository first):
 
 ```
-Windows:  START-HERE.bat --check
-Linux:    ./setup.sh --check
+Windows:  STRATA.bat --check
+Linux:    ./STRATA.sh --check
 ```
 
 To check by hand:
@@ -80,14 +80,14 @@ By the PC's RAM (ask the user whether they mainly want it for code - then the Co
 
 ## 4. Run setup without questions
 
-From the Strata folder (Windows: in `cmd`, or `cmd /c START-HERE.bat ...` from PowerShell):
+From the Strata folder (Windows: in `cmd`, or `cmd /c STRATA.bat ...` from PowerShell):
 
 ```
-Windows:  START-HERE.bat --yes --family qwen --model IQ2_XS --no-start
-Linux:    ./setup.sh --yes --family qwen --model IQ2_XS --no-start
+Windows:  STRATA.bat --yes --family qwen --model IQ2_XS --no-start
+Linux:    ./STRATA.sh --yes --family qwen --model IQ2_XS --no-start
 ```
 
-The flags (all of them: `START-HERE.bat --help`):
+The flags (all of them: `STRATA.bat --help`):
 
 | Flag | Meaning |
 | --- | --- |
@@ -140,7 +140,7 @@ Windows (PowerShell):  Start-Process -FilePath ".\run-iq2_xs.bat"            (op
 Linux:                 nohup ./run-iq2_xs.sh > strata-server.out 2>&1 &
 ```
 
-Or `START-HERE.bat` / `./setup.sh` without flags, which starts the installed model (it asks which one when several are
+Or `STRATA.bat` / `./STRATA.sh` without flags, which starts the installed model (it asks which one when several are
 installed; add `--yes` to take the first). The server opens the user's browser on `http://127.0.0.1:8080` when it is
 ready. Closing its window (or stopping the process) stops the model.
 

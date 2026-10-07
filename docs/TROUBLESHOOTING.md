@@ -13,14 +13,14 @@ PC, close other programs (browsers use a lot of RAM) and try again. If it keeps 
 or IQ2_XS).
 
 **It stopped while downloading or installing.**
-Run `START-HERE.bat` (Linux: `./setup.sh`) again. It continues where it stopped.
+Run `STRATA.bat` (Linux: `./STRATA.sh`) again. It continues where it stopped.
 
 **It says the NVIDIA driver is too old.**
 Update it (NVIDIA App or [nvidia.com/drivers](https://www.nvidia.com/drivers)), restart the PC, and run
-`START-HERE.bat` again.
+`STRATA.bat` again.
 
 **It says port 8080 is already in use.**
-Strata is already running. Look for its window. Or another program uses the port: `START-HERE.bat --port 8081`.
+Strata is already running. Look for its window. Or another program uses the port: `STRATA.bat --port 8081`.
 Only an address that is really taken says "already in use". Any other reason (Windows keeps the port reserved, or
 the config's `"host"` is not an address of this PC) is printed as what the OS said, with what to change (#769).
 
@@ -28,18 +28,19 @@ the config's `"host"` is not an address of this PC) is printed as what the OS sa
 On a clean Windows 11, Smart App Control refuses programs that are not signed, and Strata's `strata.exe` and
 `strata-vision.exe` are not (#735). Turn it off (Windows Security > App & browser control > Smart App Control
 settings; it cannot be turned back on without a reset of Windows), or, if only the image encoder is blocked, run
-`START-HERE.bat --setup --vision no`.
+`STRATA.bat --setup --vision no`.
 
 **A new engine misbehaves after an update.**
 An update keeps the engine it replaced in `engine\.previous` (one generation, about 210 MiB).
 `python setup.py --rollback-engine` puts it back (and keeps the newer one there: run it again to go forward) (#670).
 
-**UPDATE.bat / update.sh say "git pull did not succeed", or "has no commit in common" (#1276).**
+**STRATA.bat --update / STRATA.sh --update say "git pull did not succeed", or "has no commit in common" (#1276).**
 The repository's history was cleaned up on 2026-10-06, so a clone made before that cannot be updated with `git pull`.
 The 0.1.40.2 scripts handle it: when no tracked file is edited they keep your old commits in the branch
 `pre-cleanup-backup` and move the clone to the new history; otherwise they print the two commands for you. Your models,
-settings and engine are untracked files and are never touched. An older UPDATE.bat / update.sh (before 0.1.40.2) cannot
-do this itself: run these once in the Strata folder, then use UPDATE.bat as usual (add `git stash` first if `git status`
+settings and engine are untracked files and are never touched. An older Strata (before 0.1.40.2, when the update ran
+through UPDATE.bat / update.sh) cannot
+do this itself: run these once in the Strata folder, then use STRATA.bat --update as usual (add `git stash` first if `git status`
 lists edited files):
 
     git fetch origin
@@ -52,10 +53,10 @@ Install what it names (links are printed), then run it again. Everything already
 **Linux: the engine does not compile (`unsupported GNU version`, or `exception specification is incompatible` for
 `cospi`/`sinpi`/`rsqrt`).** Two known mismatches between the CUDA toolkit and a new Linux (#601):
 - gcc newer than 14 (Ubuntu 26.04's default 15): CUDA 12.x and 13.0 refuse it. Install g++-14 and run
-  `CXX=g++-14 CUDAHOSTCXX=g++-14 ./setup.sh`.
+  `CXX=g++-14 CUDAHOSTCXX=g++-14 ./STRATA.sh`.
 - glibc 2.43 with CUDA 12.9: the toolkit's math headers clash with glibc's, already in CMake's first test compile.
   Use CUDA 12.8 or 13.x instead. Setup takes the newest toolkit it finds; `STRATA_NVCC=/usr/local/cuda-12.8/bin/nvcc
-  ./setup.sh` makes it use that one (only that one).
+  ./STRATA.sh` makes it use that one (only that one).
 
 **The first start takes minutes.**
 It is reading 34-55 GB into RAM; the second start is faster while the files are in the OS cache. Started from Task
@@ -78,7 +79,7 @@ Usually not enough RAM (on Linux the system then stops the engine). Just send yo
 engine by itself. If it keeps happening, close other programs or pick a smaller size.
 
 **It says the prompt exceeds the context.**
-The conversation is longer than the context you chose. Start a new chat, or run `SETUP.bat` and pick more
+The conversation is longer than the context you chose. Start a new chat, or run `STRATA.bat --setup` and pick more
 context.
 
 **It is slower than the tables.**
@@ -142,7 +143,7 @@ lists every card it found and whether Strata can use it.
 
 **The engine stops at start with the card's name, its architecture and the build's list.**
 The engine was compiled for another card (for example after moving the Strata folder to another PC). Run
-`./setup.sh --setup --backend hip`: it compiles the engine for this card's architecture.
+`./STRATA.sh --setup --backend hip`: it compiles the engine for this card's architecture.
 
 **On Windows the engine exits with `0xC0000005` in `amdhip64_7.dll` before it prints anything (#654).**
 Two things in your environment can cause it, and the server now repairs both before it starts the engine (it says so in

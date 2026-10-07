@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Strata one-click setup and start (Windows and Linux, NVIDIA or AMD GPUs).
 
-    START-HERE.bat  (Windows)   /   ./setup.sh  (Linux)      - they install Python if needed and run this file
+    STRATA.bat  (Windows)   /   ./STRATA.sh  (Linux)      - they install Python if needed and run this file
 
 The first time it asks four questions - which model (the original Qwen3.8-Flash-Next or the Swift 1.5 fine-tune),
 which size, how much context, and whether the model should also read images - then installs everything and starts the model on http://127.0.0.1:8080 (OpenAI- and Anthropic-compatible
@@ -543,7 +543,7 @@ def recommend_pool_workers(args: list) -> list:
         return args
     p, e = cpu_cores()
     ok(f"hybrid CPU ({p} performance + {e} efficiency cores): {n} CPU expert workers - the performance cores and half "
-       "of the efficiency cores (--pool-workers in the config; START-HERE --calibrate measures it on this PC)")
+       "of the efficiency cores (--pool-workers in the config; STRATA --calibrate measures it on this PC)")
     return [*args, "--pool-workers", str(n)]
 
 
@@ -596,7 +596,7 @@ def two_socket_note(sockets) -> list[str]:
     n = sockets[1] - 1
     return [f"tip: this PC has {sockets[0]} CPU sockets of {sockets[1]} cores. Expert workers on the other socket have "
             f"been measured slower than fewer, local ones (35 vs 17-18 on 2-socket Xeons): try --pool-workers {n} in "
-            "the config's args (START-HERE --calibrate measures it on this PC)"]
+            "the config's args (STRATA --calibrate measures it on this PC)"]
 
 
 def cpu_info():
@@ -1070,7 +1070,7 @@ def split_mmap(cfg: dict) -> bool:
     a[a.index("--resident-experts")] = "--mmap-experts"
     warn("the low-RAM mode's resident variant (--resident-experts) has no layer split yet: on several GPUs the experts "
          "the GPUs do not hold are read through the OS file cache (--mmap-experts) instead, and RAM can fill up to 0 "
-         "free during long prompts. One GPU keeps them in RAM (steady RAM use): START-HERE --setup, or --gpu N for a "
+         "free during long prompts. One GPU keeps them in RAM (steady RAM use): STRATA --setup, or --gpu N for a "
          "start")
     return True
 
@@ -1116,7 +1116,7 @@ def split_budget(cfg: dict, yes: bool = False, explicit: bool = False) -> bool:
                      f"more); this PC has {ram:.0f} GB. The estimate is a worst case: a 128 GB PC ran it (#737), but "
                      "it may page or stall here.", explicit, yes,
                      f"{model} on several GPUs needs ~{need:.0f} GB of RAM; this PC has {ram:.0f} GB",
-                     "start it on one GPU: START-HERE.bat --gpu N (Linux: ./setup.sh --gpu N)")
+                     "start it on one GPU: STRATA.bat --gpu N (Linux: ./STRATA.sh --gpu N)")
     i = a.index("--resident-budget-gib")
     del a[i:i + 2]
     ok(f"{model} on several GPUs: no RAM budget (the engine has none with a layer split) - all its experts are "
@@ -1201,8 +1201,8 @@ def offer_together(cfg_path: Path, cfg: dict, yes: bool) -> dict:
     missing = [g for g in pair if not (engine_runs_on(g) if tk == 13 else engine_runs_on(g, tk))]
     if missing:
         say("  The installed engine has no code for " + ", ".join(g["name"] for g in missing) + ": to use them "
-            "together, run START-HERE.bat --setup --gpus " + ",".join(str(g["index"]) for g in pair))
-    elif ask("  Use both from now on? (you can change it later: START-HERE.bat --gpu N for one card)",
+            "together, run STRATA.bat --setup --gpus " + ",".join(str(g["index"]) for g in pair))
+    elif ask("  Use both from now on? (you can change it later: STRATA.bat --gpu N for one card)",
              ["y", "n"], "n" if resident or short or budget else "y", yes) == "y":
         cfg["gpu"] = [g["index"] for g in pair]
         cfg["layer_split"] = cfg.get("layer_split") or "auto"
@@ -1211,7 +1211,7 @@ def offer_together(cfg_path: Path, cfg: dict, yes: bool) -> dict:
         recommend_remote_expert_opt(cfg)
         ok("from now on this model runs on " + " + ".join(gpu_name(g) for g in pair))
     else:
-        ok("staying on one GPU (START-HERE.bat --gpus " + ",".join(str(g["index"]) for g in pair) + " switches)")
+        ok("staying on one GPU (STRATA.bat --gpus " + ",".join(str(g["index"]) for g in pair) + " switches)")
     write_config(cfg_path, cfg)
     return cfg
 
@@ -2252,7 +2252,7 @@ def hip_runtime_beside_exe(eng: Path) -> None:
                 shutil.copy2(src, dst)
             except OSError as e:                   # e.g. the engine is running and holds the old copy
                 warn(f"could not put {src.name} next to the AMD engine ({e}); if the engine stops on its first "
-                     "request, close Strata and run START-HERE.bat again")
+                     "request, close Strata and run STRATA.bat again")
 
 
 def hip_match(card: dict, listed: list[dict], hip: list[dict]) -> dict | None:
@@ -2894,7 +2894,7 @@ def get_prebuilt(url_base, gpu, vision, updating=False, toolkit=13) -> Path | No
 
 def update_installed_engine(url_base, toolkit=None) -> None:
     """An installed ready-made engine older than MIN_ENGINE is replaced before the model starts, so a plain
-    START-HERE.bat on an existing install picks up a new release.  If that cannot happen (no internet, the model
+    STRATA.bat on an existing install picks up a new release.  If that cannot happen (no internet, the model
     still running, no ready-made engine for this GPU) the installed engine is kept and starts as before.
     toolkit None: engine/, then the experimental CUDA 12 engine in engine-cuda12/ when one is installed."""
     if toolkit is None:
@@ -3969,7 +3969,7 @@ def saved_calibration(cfg: dict) -> dict | None:
 
 def setup_calibration(cfg: dict, hip: bool) -> dict | None:
     """The calibration a (re-)install applies to its new config: the one saved for this PC and model.  #566: on Linux
-    HIP too - hardware_key now names the AMD cards, so a `./setup.sh --calibrate` run is matched to its card and
+    HIP too - hardware_key now names the AMD cards, so a `./STRATA.sh --calibrate` run is matched to its card and
     model.  Windows HIP keeps the defaults for now (not tried there).  Setup still offers the tuning itself on NVIDIA
     only: each control is verified on HIP first."""
     if hip and WIN:
@@ -4002,15 +4002,73 @@ def upgrade_config(cfg_path: Path, cfg: dict) -> dict:
     return cfg
 
 
+def fetch_new_code() -> int:
+    """`--update` fetches the newest code itself (the former UPDATE.bat / update.sh logic, moved here so the
+    entry scripts hold no git code and cannot corrupt themselves mid-pull).  A git clone: `git pull --ff-only`;
+    a pull that fails stops the update before anything is touched.  Not a git clone (an unzipped archive):
+    the download guidance, then the update continues on this copy.  Returns 0 to go on, 1 to stop."""
+    if not (ROOT / ".git").exists():
+        say("  This copy of Strata was not made with git, so it cannot fetch new files itself. Download the newest one:")
+        say("    https://github.com/Niko1221/Strata/archive/refs/heads/main.zip")
+        say("  unzip it anywhere and run STRATA there (STRATA.bat / STRATA.sh): it finds the model files in")
+        say("  Strata-data and sets itself up the same way - nothing big is downloaded again.")
+        say("  Checking this copy's engine and settings meanwhile ...")
+        return 0
+    if subprocess.call(["git", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL):
+        say("  This folder is a git clone, but git is not on PATH: install Git for Windows (winget install Git.Git)")
+        say("  or run \"git pull\" here yourself, then run STRATA.bat --update again.")
+        return 1
+    say("  Getting the newest Strata (git pull) ...")
+    if subprocess.call(["git", "pull", "--ff-only"]) == 0:
+        return 0
+    say("")
+    # #1276: the repository's history was cleaned up on 2026-10-06; a clone made before that has no commit in
+    # common with origin/main, so a fast-forward can never work. Say so, and move it over when nothing is lost.
+    shallow = subprocess.run(["git", "rev-parse", "--is-shallow-repository"],
+                             capture_output=True, text=True).stdout.strip() == "true"
+    if not shallow and subprocess.call(["git", "merge-base", "HEAD", "origin/main"],
+                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL):
+        say("  This clone is on the repository's old history (cleaned up on 2026-10-06): it has no commit in common")
+        say("  with origin/main, so it cannot be updated by git pull.")
+        tracked_edits = subprocess.run(["git", "status", "--porcelain", "--untracked-files=no"],
+                                       capture_output=True, text=True).stdout.strip()
+        if tracked_edits:
+            say("  You have local changes to tracked files here, so nothing was touched. To move to the new history")
+            say("  yourself (your untracked files, models and settings stay where they are):")
+            say("    git branch pre-cleanup-backup && git stash push   # keeps the old commits and your edits")
+            say("    git checkout -B main origin/main")
+            say("  then run STRATA --update again.")
+            return 1
+        backup = "pre-cleanup-backup"
+        if subprocess.call(["git", "rev-parse", "--verify", "-q", "refs/heads/" + backup],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
+            backup = "pre-cleanup-backup-" + time.strftime("%Y%m%d%H%M%S")
+        branch = subprocess.run(["git", "symbolic-ref", "--short", "-q", "HEAD"],
+                                capture_output=True, text=True).stdout.strip() or "main"
+        if subprocess.call(["git", "branch", backup, "HEAD"]) == 0 and \
+                subprocess.call(["git", "checkout", "-q", "-B", branch, "origin/main"]) == 0:
+            say("  Moved to the new history. Your old commits are kept in the branch " + backup + ".")
+            say("  Untracked files (models, settings, the engine) were not touched.")
+            return 0
+        say("  Could not move to the new history (the reason is above): nothing was updated. By hand:")
+        say("    git branch pre-cleanup-backup")
+        say("    git checkout -B main origin/main")
+        return 1
+    say("  git pull did not succeed (the reason is above): nothing was updated. Files you changed here can stop it:")
+    say("  \"git status\" lists them.")
+    return 1
+
+
 def update_install(have: list, a) -> int:
-    """#475: `setup.py --update` (UPDATE.bat / update.sh, after their git pull): what a plain START-HERE.bat does to
-    an install before it starts the model, without starting it - the Python packages, the ready-made engine when this
+    """#475: `setup.py --update` (what STRATA.bat / STRATA.sh --update runs): fetch_new_code pulls the newest
+    code, then this refreshes what a plain start does to an install before it starts the model, without starting
+    it - the Python packages, the ready-made engine when this
     setup needs a newer one (MIN_ENGINE; a compiled engine when its source changed), each installed model's config
     upgrades and its draft subset.  No question is asked and the model files are not touched; a model still running
     keeps its engine (update_installed_engine says to close it and run this again)."""
     have = [p for p in have if model_config(p)]        # #549: a strata-*.json that is no model config is skipped
     if not have:
-        say("  No model is installed in this Strata folder yet: run START-HERE.bat (Linux: ./setup.sh) to set it up -")
+        say("  No model is installed in this Strata folder yet: run STRATA.bat (Linux: ./STRATA.sh) to set it up -")
         say("  it finds an earlier install's model files next to it and reuses them.")
         return 0
     pip_install(requirement_lines() if REQUIREMENTS.exists() else PY_PACKAGES,
@@ -4027,7 +4085,7 @@ def update_install(have: list, a) -> int:
     ver = engine_version(Path(json.loads(have[0].read_text(encoding="utf-8-sig"))["exe"]))
     say()
     ok("Strata is updated" + (f" (engine {'.'.join(map(str, ver))})" if any(ver) else "") +
-       ". Start the model with " + ("START-HERE.bat" if WIN else "./setup.sh") + " when you want it.")
+       ". Start the model with " + ("STRATA.bat" if WIN else "./STRATA.sh") + " when you want it.")
     return 0
 
 
@@ -4095,7 +4153,7 @@ def start(cfg_path: Path, port: int | None, gpu: int | list | None = None, open_
             miss = [x for x in cards if built and x["arch"] not in built]
             if miss:
                 fail("the installed engine has no code for " + ", ".join(f"{x['name']} ({x['arch']})" for x in miss),
-                     "set it up for these cards: ./setup.sh --setup --backend hip --gpus " + ",".join(map(str, gpu)))
+                     "set it up for these cards: ./STRATA.sh --setup --backend hip --gpus " + ",".join(map(str, gpu)))
             cfg["gpu"], cfg["gpus_asked"] = gpu, True
             cfg["layer_split"] = layer_split or cfg.get("layer_split") or "auto"
             split_budget(cfg, yes, True)               # #498: before it is saved (asks when the RAM is short, #737)
@@ -4242,7 +4300,7 @@ def draft_vocab_note(vram_gb: float, chosen: str | None) -> list[str]:
     --draft-vocab, or kept from an earlier install, gets no note.  [] for every other case."""
     if chosen or not 0 < vram_gb < SMALL_DRAFT_VRAM_GB:
         return []
-    start = "START-HERE.bat" if WIN else "./setup.sh"
+    start = "STRATA.bat" if WIN else "./STRATA.sh"
     return [f"Tip for a {vram_gb:.0f} GB card: the draft layer's default token subset (with Chinese, Japanese and "
             f"Korean) needs up to ~{DRAFT_VOCAB_MIB['cjk']} MiB of VRAM.",
             f"  For English and code answers, {start} --draft-vocab en needs up to ~{DRAFT_VOCAB_MIB['en']} MiB "
@@ -4257,7 +4315,7 @@ def small_card_note(ctx: int, draft_vocab: str | None) -> list[str]:
     """#496: what frees VRAM on a card under 8 GB when the start stops with "no VRAM is left for the expert cache"
     (the engine already lowers its own reserve on such a card) - a recommendation, setup changes none of it.  (The
     draft layer stays: the server needs it.)"""
-    start = "START-HERE.bat --setup" if WIN else "./setup.sh"
+    start = "STRATA.bat --setup" if WIN else "./STRATA.sh"
     tips = []
     if ctx > 8192:
         tips.append("an 8K context (a smaller KV cache)")
@@ -4387,7 +4445,7 @@ def desktop_reserve_note() -> list[str]:
     fills it, and when the desktop needs more VRAM amdgpu moves the cache to system RAM, where the OOM killer then ends
     the compositor.  A recommendation, setup changes nothing."""
     return [f"If this AMD card also drives your desktop and the desktop or apps crash once the model is loaded, keep "
-            f"more VRAM free: ./setup.sh --vram-reserve-mib {DESKTOP_RESERVE_MIB}",
+            f"more VRAM free: ./STRATA.sh --vram-reserve-mib {DESKTOP_RESERVE_MIB}",
             "  (remembered for this model; the expert cache gets ~2.3 GB less, a few % of speed)"]
 
 
@@ -4474,7 +4532,7 @@ def use_cuda12(cards, cfg_path: Path, cfg: dict, yes: bool) -> dict:
     old = min(int(g["arch"]) for g in cards)
     say()
     warn(f"sm_{old} is older than CUDA 13 supports (it dropped Pascal and Volta): this model moves to the experimental "
-         "CUDA 12 engine (docs/OLDER_GPUS.md; START-HERE.bat --setup --cuda 13 and newer cards only moves it back)")
+         "CUDA 12 engine (docs/OLDER_GPUS.md; STRATA.bat --setup --cuda 13 and newer cards only moves it back)")
     main = gpu_info(cards[0]["index"]) or cards[0]
     vision = "gpu" if cfg.get("vision") else "none"
     eng = get_cuda12_engine(os.environ.get("STRATA_PREBUILT_URL", PREBUILT_URL),
@@ -4621,8 +4679,8 @@ def main() -> int:
     ap.add_argument("--setup", action="store_true", help="install another model or change settings")
     ap.add_argument("--no-start", action="store_true", help="install only, do not start the model")
     ap.add_argument("--update", action="store_true",
-                    help="update the installed engine, Python packages and model settings as a start would, without "
-                         "starting the model (UPDATE.bat / update.sh run it after a git pull)")
+                    help="fetch the newest code (git pull --ff-only in a git clone), then update the installed "
+                         "engine, Python packages and model settings as a start would, without starting the model")
     ap.add_argument("--rollback-engine", action="store_true",
                     help="put back the engine an update replaced (kept in engine/.previous), and keep the current one there")
     ap.add_argument("--build", action="store_true", help="compile the engine instead of using the ready-made one")
@@ -4700,7 +4758,9 @@ def main() -> int:
 
     # ---- 0. already installed: just start it
     have = installed_configs()
-    if a.update:                                       # #475: UPDATE.bat / update.sh - never starts the model
+    if a.update:                                       # #475: STRATA --update - fetch the code, never start the model
+        if fetch_new_code():
+            return 1
         return update_install(have, a)
     explicit = a.setup or a.model or a.family or a.check or a.no_start
     adopted = None                                     # #629: the earlier install this copy is set up like
@@ -4792,7 +4852,7 @@ def main() -> int:
               " - docs/AMD_HIP.md)")
         hip = ask("Which cards?", ["1", "2"], "1", a.yes or a.check) == "2"
         if a.check and not hip:
-            say(f"  (the AMD card: {'START-HERE.bat' if WIN else './setup.sh'} --backend hip)")
+            say(f"  (the AMD card: {'STRATA.bat' if WIN else './STRATA.sh'} --backend hip)")
     cuda_tk = 13                                       # NVIDIA: the toolkit of this model's engine (cuda_choice)
     if hip:                                            # AMD: compiled here; Windows: ready-made
         if WIN and a.gpus:
@@ -5219,7 +5279,7 @@ def main() -> int:
         if eng is None:
             fail("no ready-made AMD engine for this Strata version" + (" (--build)" if a.build else ""),
                  "compiling it on Windows: tools\\hip\\build_windows.bat makes strata-windows-x64-hip.zip, then run "
-                 "START-HERE.bat --backend hip --prebuilt <its dist folder> (docs/AMD_HIP.md)")
+                 "STRATA.bat --backend hip --prebuilt <its dist folder> (docs/AMD_HIP.md)")
         gpu = hip_card(eng, gpu, amd)
         a.gpu = gpu["index"] if gpu["count"] > 1 else a.gpu
     else:
@@ -5522,7 +5582,7 @@ def main() -> int:
     # offered only when someone answers: --yes installs and adopted earlier installs are not held up by it
     if cal is None and not hip and not a.no_start and not a.yes and ask(
             "Tune Strata for this PC now? It measures a few engine settings (about 15-30 minutes, longer on a slow card; the PC is busy "
-            "meanwhile; later: START-HERE --calibrate)", ["y", "n"], "y", a.yes) == "y":
+            "meanwhile; later: STRATA --calibrate)", ["y", "n"], "y", a.yes) == "y":
         tuned = calibrate_config(cfg_path)
     else:
         tuned = None                                   # not asked for: nothing to repeat below
@@ -5535,7 +5595,7 @@ def main() -> int:
     if a.host and a.host not in ("127.0.0.1", "localhost"):
         say(f"  Other devices:    the server window prints this PC's address (http://<IP>:{port}/)"
             + ("" if a.api_key else " - no API key set: anyone on your network can use it"))
-    say(f"  Next time:        just run {'START-HERE.bat' if WIN else './setup.sh'} (or {script.name}) - it starts right away")
+    say(f"  Next time:        just run {'STRATA.bat' if WIN else './STRATA.sh'} (or {script.name}) - it starts right away")
     if vision != "none":
         say("  Images:           send them in the chat page, in chat.py (/image <path>) or over the API")
     if a.parallel is None:                             # #465: the opt-in, said once (nothing changes)
@@ -5544,7 +5604,7 @@ def main() -> int:
             say("  " + line)
     if tuned is False:                                 # #447: a failed tuning is repeated here, not only above
         say("  Tuning:           FAILED (the reason is above): the default settings stay - "
-            f"{'START-HERE.bat' if WIN else './setup.sh'} --calibrate tries again")
+            f"{'STRATA.bat' if WIN else './STRATA.sh'} --calibrate tries again")
     if a.no_start:
         return 0
     return start(cfg_path, port)

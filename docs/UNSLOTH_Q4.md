@@ -13,11 +13,11 @@ the 3-bit models'.
 
 ## Setup
 
-`START-HERE.bat --setup` (Linux: `./setup.sh --setup`) and choose **Qwen3.8-Flash-Next (Unsloth)**, marked
+`STRATA.bat --setup` (Linux: `./STRATA.sh --setup`) and choose **Qwen3.8-Flash-Next (Unsloth)**, marked
 `[experimental]`; or directly:
 
 ```sh
-START-HERE.bat --setup --family unsloth --model UD-Q4_K_XL
+STRATA.bat --setup --family unsloth --model UD-Q4_K_XL
 ```
 
 What setup does differently for this model:
@@ -33,7 +33,7 @@ What setup does differently for this model:
   start, the files pass through the OS file cache while they load, and the config gets `"gpu": [0, 1]` and
   `"layer_split": "auto"`. Measured on 2x RTX 3090 with 165 GiB (#498): decode 31 tok/s on one card with the budget,
   64-78 tok/s split (55 tok/s at a 128K prompt), with `MemAvailable` never under 68 GiB. With less RAM, `--gpus`
-  keeps one GPU and says so, and `START-HERE.bat --gpus 0,1` on an installed UD-Q4_K_XL stops with the reason
+  keeps one GPU and says so, and `STRATA.bat --gpus 0,1` on an installed UD-Q4_K_XL stops with the reason
   (it used to keep the budget, and the engine exited with code 2).
 - It downloads the four shards below from the pinned revision `38bb39e` (resumable, like the other models), then
   checks each one's size and SHA-256 against the table below; the check takes a few minutes once and is remembered
@@ -230,7 +230,7 @@ engine with `--short-read` covering the positions to compare; llama.cpp's side w
 ## UD-IQ4_XS (setup from 0.1.39, #621)
 
 Unsloth's `UD-IQ4_XS` at the same revision is in setup too, as a regular choice (not experimental; the Unsloth
-family's first size and its default): `START-HERE.bat --setup --family unsloth --model UD-IQ4_XS` (engine 0.1.38 or
+family's first size and its default): `STRATA.bat --setup --family unsloth --model UD-IQ4_XS` (engine 0.1.38 or
 newer). It sits between IQ3_S and UD-Q4_K_XL: its routed experts are IQ3_S gate/up (IQ4_XS
 in one layer) with IQ4_NL downs (Q8_0 in five layers), 59.5 GB of them; the dense side (Q8_0 projections, the IQ4_NL
 PLE table, a Q6_K head) is UD-Q4_K_XL's. Three shards, 93.7 GB:

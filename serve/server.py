@@ -341,7 +341,7 @@ _echoing: set[str] = set()      # the logs echo_requests already follows (restar
 DRAFT_HEAD_FAIL = "the draft head does not fit"
 DRAFT_HEAD_HINT = ("a smaller draft vocabulary needs less VRAM: --draft-vocab cyrillic (English, code and the Cyrillic "
                    "script) or --draft-vocab en (English and code, ~215 MiB less than the default). Start once with "
-                   "it - START-HERE.bat --draft-vocab en (Windows) or ./setup.sh --draft-vocab en - and the model "
+                   "it - STRATA.bat --draft-vocab en (Windows) or ./STRATA.sh --draft-vocab en - and the model "
                    "keeps it; or a smaller --context in setup.")
 
 
@@ -5249,7 +5249,7 @@ def warn_tight_ram(arena_mib) -> None:
               f"{total / 2**30:.0f} GB, leaving {left:.1f} GB for everything else. "
               + ("Linux may stop the engine in the middle of an answer. " if os.name != "nt" else
                  "Windows will slow down (paging to disk). ")
-              + "Close other programs, or run START-HERE --setup and pick a smaller size (Q2_0 / IQ2_XS).", flush=True)
+              + "Close other programs, or run STRATA --setup and pick a smaller size (Q2_0 / IQ2_XS).", flush=True)
 
 
 def warn_budget_over_ram(args) -> str | None:
@@ -5300,7 +5300,7 @@ def desktop_vram_note(backend, vram_free_mib, args: list, desktop: bool) -> str:
         return ""
     return (f"[strata] note: {vram_free_mib} MiB of VRAM free with the model loaded. If this AMD card also drives your "
             "desktop and the desktop or apps crash after the start (the driver moves the expert cache to RAM and "
-            "the OOM killer ends the session), keep more VRAM free: ./setup.sh --vram-reserve-mib "
+            "the OOM killer ends the session), keep more VRAM free: ./STRATA.sh --vram-reserve-mib "
             f"{DESKTOP_RESERVE_MIB} (remembered; the expert cache gets "
             f"{(DESKTOP_RESERVE_MIB - reserve) / 1024:.1f} GB less, a few % of speed)")
 

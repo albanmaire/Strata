@@ -218,7 +218,7 @@ class NoBrowser(unittest.TestCase):
         self.assertNotIn("--open", cmd)
         self.assertNotIn("the browser opens", out)
         self.assertIn("no browser", out)                                  # the Settings line says so
-        cmd, out, saved = self.start_cmd({}, {"open_browser": False})     # START-HERE --no-browser: kept from now on
+        cmd, out, saved = self.start_cmd({}, {"open_browser": False})     # STRATA --no-browser: kept from now on
         self.assertNotIn("--open", cmd)
         self.assertIs(saved["open_browser"], False)
         self.assertIn("saved for this model: no browser", out)

@@ -50,7 +50,7 @@ A card with more VRAM is faster, because more of the model fits on the GPU: an R
 [details](DETAILS.md#speed-measured). The AMD measurements per card (RX 9070 XT, Radeon AI PRO R9700, RX 7800 XT,
 RX 9060 XT, RX 6900 XT) are in [AMD_HIP.md](AMD_HIP.md#rdna4-gfx1201).
 
-Every PC is different: `START-HERE.bat --calibrate` measures a few engine settings on yours and keeps the fastest
+Every PC is different: `STRATA.bat --calibrate` measures a few engine settings on yours and keeps the fastest
 (about 15-30 minutes, longer on a slow card; on the PC above it made the Coder 7% faster; NVIDIA cards for now). Measured Strata on your own
 PC? See [Community benchmark results](COMMUNITY_BENCHMARKS.md) for a report template and how to share your results
 in a pull request.
@@ -82,7 +82,7 @@ On a PC whose RAM cannot hold the experts beside the system, setup maps them fro
 in RAM only what the graphics card does not hold (the [low-RAM mode](DETAILS.md#speed-measured), chosen by setup). For
 example, a 32 GB PC with a 24 GB GPU runs Q2_0, IQ2_XS and the Coder this way, and a 32 GB PC with a 12-16 GB GPU the
 Coder. With a small card most experts then come from the SSD and it is much slower (setup says so).
-`START-HERE.bat --setup --low-ram on|off` overrides the choice.
+`STRATA.bat --setup --low-ram on|off` overrides the choice.
 
 ## The versions
 
@@ -103,7 +103,7 @@ fine). For general use, or whenever your RAM allows, take a size that keeps ever
 More: [details](DETAILS.md#or-the-coder-half-the-experts-for-code).
 
 ```
-START-HERE.bat --setup --family coder
+STRATA.bat --setup --family coder
 ```
 
 ### Swift 1.5
@@ -114,7 +114,7 @@ token, and about the same RAM as the same size of the original (no IQ3_S). Its o
 More: [details](DETAILS.md#or-swift-15-a-fine-tune-that-thinks-shorter).
 
 ```
-START-HERE.bat --setup --family swift --model IQ2_XS
+STRATA.bat --setup --family swift --model IQ2_XS
 ```
 
 ### Unsloth UD-IQ4_XS
@@ -127,7 +127,7 @@ It needs 48 GB of RAM or more and engine 0.1.38 or newer; images are an option, 
 Details: [UD-IQ4_XS](UNSLOTH_Q4.md#ud-iq4_xs-setup-from-0139-621).
 
 ```
-START-HERE.bat --setup --family unsloth --model UD-IQ4_XS
+STRATA.bat --setup --family unsloth --model UD-IQ4_XS
 ```
 
 ### Unsloth UD-Q4_K_XL (experimental)
@@ -139,7 +139,7 @@ times slower than the sizes above, and long prompts are slow. It needs 48 GB of 
 NVIDIA GPU (no images yet). Details and measurements: [UD-Q4_K_XL](UNSLOTH_Q4.md).
 
 ```
-START-HERE.bat --setup --family unsloth --model UD-Q4_K_XL
+STRATA.bat --setup --family unsloth --model UD-Q4_K_XL
 ```
 
 **Unsloth's 6-bit UD-Q6_K_XL** (experimental, not in setup's menu) trades more bytes per expert for less precision
@@ -152,7 +152,7 @@ explicit packing conversion and is not an installer menu option.
 
 ## Adding or switching models
 
-You can add another model any time with `SETUP.bat` (the same as `START-HERE.bat --setup`; on Linux
-`./setup.sh --setup`). Files another model shares are not downloaded again (the Coder uses the original's shard 2 and
-vision encoder). With more than one model installed, `START-HERE.bat` asks which one to start; `run-<model>.bat`
+You can add another model any time with `STRATA.bat --setup` (the same as `STRATA.bat --setup`; on Linux
+`./STRATA.sh --setup`). Files another model shares are not downloaded again (the Coder uses the original's shard 2 and
+vision encoder). With more than one model installed, `STRATA.bat` asks which one to start; `run-<model>.bat`
 (Linux: `run-<model>.sh`) starts one directly.

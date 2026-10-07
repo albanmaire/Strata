@@ -49,12 +49,12 @@ An older card is used only when you choose it; a PC with a newer card keeps reco
 | You | Setup |
 | --- | --- |
 | have only Pascal / Volta NVIDIA cards (and no AMD card it can use) | uses them, with the CUDA 12 engine |
-| name the card: `START-HERE.bat --setup --gpu 1`, or `--gpus 0,1` with a newer card | uses it; the model gets the CUDA 12 engine |
+| name the card: `STRATA.bat --setup --gpu 1`, or `--gpus 0,1` with a newer card | uses it; the model gets the CUDA 12 engine |
 | `--cuda 12` (or `STRATA_CUDA=12`) | the CUDA 12 engine for this model, on any card |
 | `--cuda 13` | the CUDA 13 engine even with an older card (a warning: it has no code for that card) |
 | `STRATA_EXPERIMENTAL_SM60=1` | the older cards are listed as usable (the setting from #295 still works) |
 
-The choice is kept in the model's config (`"cuda": 12`): its starts and `UPDATE.bat` keep it, and other models keep
+The choice is kept in the model's config (`"cuda": 12`): its starts and `STRATA.bat --update` keep it, and other models keep
 their own engine. Setting the model up again chooses again (by its cards; add `--cuda 12` to keep a forced choice). A Pascal / Volta card added to a model at a start (`--gpus`) moves that model to the
 CUDA 12 engine.
 

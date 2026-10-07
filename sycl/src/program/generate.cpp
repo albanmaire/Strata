@@ -4060,7 +4060,7 @@ int main(int argc, char **argv) try {
                 DPCT1005: The SYCL device version is different from CUDA
                 Compute Compatibility. You may need to rewrite this code.
                 */
-                "card (setup does: START-HERE.bat --setup)\n",
+                "card (setup does: STRATA.bat --setup)\n",
                 name, p.get_major_version(), p.get_minor_version(), e.c_str());
             return 1;
         }

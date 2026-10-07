@@ -4109,7 +4109,7 @@ int main(int argc, char** argv) {
                         std::fprintf(stderr, "strata generate: the bundled runtime beside the engine %s (GetLastError %lu)%s\n",
                                      probe != nullptr ? "loads on its own" : "does NOT load", (unsigned long) le,
                                      le == 126 ? ": a DLL it imports is missing from the engine's folder (rocm_kpack.dll, "
-                                                 "msvcp140.dll, vcruntime140.dll, vcruntime140_1.dll); run START-HERE.bat "
+                                                 "msvcp140.dll, vcruntime140.dll, vcruntime140_1.dll); run STRATA.bat "
                                                  "again (0.1.40.3 and later copy them)" : "");
                     }
                 }
@@ -4136,7 +4136,7 @@ int main(int argc, char** argv) {
         const std::string e = strata::core::device_code_error();
         if (!e.empty()) {
             std::fprintf(stderr, "strata generate: this engine has no code for %s (sm_%d%d): %s - rebuild it for this "
-                                 "card (setup does: START-HERE.bat --setup)\n", name, p.major, p.minor, e.c_str());
+                                 "card (setup does: STRATA.bat --setup)\n", name, p.major, p.minor, e.c_str());
             return 1;
         }
     }

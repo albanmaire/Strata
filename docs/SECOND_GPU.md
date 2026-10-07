@@ -44,13 +44,13 @@ behavior applies.
 On an existing Linux installation, apply the patch to its source tree, then run:
 
 ```sh
-./setup.sh --setup --gpu1-experts 5000 --gpu2-experts 5000 --gpu3-experts 5000
+./STRATA.sh --setup --gpu1-experts 5000 --gpu2-experts 5000 --gpu3-experts 5000
 ```
 
 On Windows, from PowerShell in the installation folder:
 
 ```powershell
-.\START-HERE.bat --setup --gpu1-experts 5000 --gpu2-experts 5000 --gpu3-experts 5000
+.\STRATA.bat --setup --gpu1-experts 5000 --gpu2-experts 5000 --gpu3-experts 5000
 ```
 
 To test the layer placement instead, add `--gpu-placement layer` to the setup

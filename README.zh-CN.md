@@ -86,7 +86,7 @@ Strata 的 [MCP 服务器](docs/MCP_SERVER.md)来安装、启动和停止 Strata
 ### 或者自己动手
 
 [下载 Strata](https://github.com/Niko1221/Strata/archive/refs/heads/main.zip) 并解压（或者用 `git clone`）。
-**Windows：** 双击 **`START-HERE.bat`**。**Linux：** 在 Strata 文件夹里运行 **`./setup.sh`**。
+**Windows：** 双击 **`STRATA.bat`**。**Linux：** 在 Strata 文件夹里运行 **`./STRATA.sh`**。
 
 NVIDIA 和 AMD 的步骤完全一样。安装程序会识别你的显卡，并装好对应的引擎。它会问你几个问题：
 
@@ -101,8 +101,8 @@ NVIDIA 和 AMD 的步骤完全一样。安装程序会识别你的显卡，并�
 > Strata 会把 35-55 GB 加载到内存，并为显卡锁定其中一部分。这是正常的。请耐心等待，不要关闭窗口。
 > 窗口里会显示 Strata 正在做什么。
 
-**下次使用时**，再运行一次 `START-HERE.bat`（或 `./setup.sh`）。它会马上启动，已下载的东西不会重复下载。关闭它的窗口就能停止模型。
-`UPDATE.bat`（`./update.sh`）只更新 Strata，不启动。更新、Docker、多张显卡、文件存放位置以及所有选项：
+**下次使用时**，再运行一次 `STRATA.bat`（或 `./STRATA.sh`）。它会马上启动，已下载的东西不会重复下载。关闭它的窗口就能停止模型。
+`STRATA.bat --update`（`./STRATA.sh --update`）只更新 Strata，不启动。更新、Docker、多张显卡、文件存放位置以及所有选项：
 [docs/INSTALL.md](docs/INSTALL.md)。
 
 ## 该选哪个模型
@@ -127,7 +127,7 @@ NVIDIA 和 AMD 的步骤完全一样。安装程序会识别你的显卡，并�
 - **[OrcaRouter 的 Uncensored IQ3_XXS](docs/MODELS.md#orcarouter-uncensored-iq3_xxs)：** 需要手动设置，不在安装程序的菜单里。
 
 规格、下载以及各配置能装下什么：[docs/MODELS.md](docs/MODELS.md)。以后想再添加模型，运行
-`SETUP.bat`（Linux：`./setup.sh --setup`）。
+`STRATA.bat --setup`（Linux：`./STRATA.sh --setup`）。
 
 ## 使用方法
 
@@ -146,7 +146,7 @@ NVIDIA 和 AMD 的步骤完全一样。安装程序会识别你的显卡，并�
   high 最适合难题。
 - **图片：** 在安装时对“Images?”选是。然后在聊天里点 **Picture**，或在你的应用里附上图片。
   AMD 显卡在 Linux 上通过处理器识别图片；在 Windows 上暂时还不行。
-- **从手机或另一台电脑访问：** `START-HERE.bat --setup --host 0.0.0.0 --api-key <secret>`。一定要设置 key。
+- **从手机或另一台电脑访问：** `STRATA.bat --setup --host 0.0.0.0 --api-key <secret>`。一定要设置 key。
 - **一次处理一个请求：** 默认情况下 Strata 一次只回答一个请求，其他请求排队等待。想同时回答多个，
   设置 `"parallel": 2`（[BATCHING.md](docs/BATCHING.md)）。在 12 GB 显卡上，这会让每个回答变慢。
 - **长提示：** Strata 会完整读入对话的第一条消息，大约每 30,000 个 token 需要 1 分钟。之后的消息几秒内就开始回答。
@@ -157,7 +157,7 @@ NVIDIA 和 AMD 的步骤完全一样。安装程序会识别你的显卡，并�
 
 - **Strata 第一次启动时电脑卡死了。** 加载模型时这是正常的。请耐心等待，不要关闭窗口。
   10 分钟后还卡着？重启电脑，关掉其他程序再试一次，或者换一个更小的规格。
-- **下载或安装时中断了。** 再运行一次 `START-HERE.bat`（或 `./setup.sh`）。它会从中断的地方继续。
+- **下载或安装时中断了。** 再运行一次 `STRATA.bat`（或 `./STRATA.sh`）。它会从中断的地方继续。
 - **非常慢，硬盘灯一直闪，或者提示“the engine stopped unexpectedly”。** 你的电脑可用内存不够。
   关掉其他程序（浏览器很占内存），或者换一个更小的规格（Q2_0 或 IQ2_XS）。
 - **提示 8080 端口已被占用。** Strata 已经在运行了。找一下它的窗口。

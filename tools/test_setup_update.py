@@ -1,5 +1,6 @@
-"""Tests for `setup.py --update` (#475, UPDATE.bat / update.sh): it refreshes what a start would - the Python packages,
-the engine, each model's config and draft subset - and never starts the model.  Every outside effect is mocked: no
+"""Tests for `setup.py --update` (#475; STRATA.bat / STRATA.sh --update run it): fetch_new_code pulls the
+newest code, then the update refreshes what a start would - the Python packages, the engine, each model's
+config and draft subset - and never starts the model.  Every outside effect is mocked: no
 GPU, no downloads, nothing written outside a temp folder.
 
     python -m unittest tools.test_setup_update
@@ -67,7 +68,7 @@ class Update(unittest.TestCase):
         self.assertEqual(rc, 0)
         for m in (pip, eng, dv, start, call):
             m.assert_not_called()
-        self.assertIn("START-HERE.bat", out)
+        self.assertIn("STRATA.bat", out)
 
     def test_a_json_that_is_no_model_config_is_skipped(self):
         """#549: a strata-*.json without "args" (not written by setup) stopped update.sh with KeyError: 'args'."""
@@ -98,12 +99,98 @@ class Update(unittest.TestCase):
             with mock.patch.object(sys, "argv", ["setup.py", "--update"]), \
                     mock.patch.object(setup, "data_folder", return_value=(Path(d), [])), \
                     mock.patch.object(setup, "installed_configs", return_value=[p]), \
+                    mock.patch.object(setup, "fetch_new_code", return_value=0) as fetch, \
                     mock.patch.object(setup, "update_install", return_value=0) as up, \
                     mock.patch.object(setup, "start") as start, \
                     contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(setup.main(), 0)
+        fetch.assert_called_once()                           # the code fetch happens first
         up.assert_called_once()
         start.assert_not_called()
+
+
+class FetchNewCode(unittest.TestCase):
+    """A6: --update fetches the code itself (the former UPDATE.bat / update.sh logic, now testable here).
+    git present: git pull --ff-only; a failed pull stops the update; the #1276 old-history clone is moved
+    over when nothing is lost; no git: the zip guidance, then go on."""
+
+    def run_fetch(self, git_dir, calls, runs=()):
+        """calls: what each subprocess.call returns (git --version, git pull, then the recovery probes);
+        runs: what each subprocess.run returns (stdout text, in call order)."""
+        def run_result(stdout=""):
+            return mock.Mock(stdout=stdout)
+        with mock.patch.object(setup, "ROOT", Path(git_dir)), \
+                mock.patch.object(setup.subprocess, "call", side_effect=calls) as sc, \
+                mock.patch.object(setup.subprocess, "run", side_effect=[run_result(r) for r in runs]) as sr, \
+                contextlib.redirect_stdout(io.StringIO()) as out:
+            rc = setup.fetch_new_code()
+        return rc, sc, sr, out.getvalue()
+
+    def test_git_clone_pulls(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / ".git").mkdir()
+            rc, sc, _sr, out = self.run_fetch(d, [0, 0])
+        self.assertEqual(rc, 0)
+        self.assertEqual(sc.call_args_list[0][0][0], ["git", "--version"])
+        self.assertEqual(sc.call_args_list[1][0][0], ["git", "pull", "--ff-only"])
+        self.assertIn("Getting the newest Strata", out)
+
+    def test_failed_pull_stops_the_update(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / ".git").mkdir()
+            # pull fails, merge-base finds common history (a normal failure, not the #1276 case)
+            rc, _sc, _sr, out = self.run_fetch(d, [0, 1, 0], runs=["false"])
+        self.assertEqual(rc, 1)
+        self.assertIn("git pull did not succeed", out)
+
+    def test_old_history_moved_over(self):
+        """#1276: a clone from before the 2026-10-06 history cleanup, nothing edited: backup branch + move."""
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / ".git").mkdir()
+            # version 0, pull 1, merge-base 1 (no common commit), rev-parse backup 1 (none yet), branch 0, checkout 0
+            rc, sc, _sr, out = self.run_fetch(d, [0, 1, 1, 1, 0, 0],
+                                              runs=["false", "", "main"])
+        self.assertEqual(rc, 0, out)
+        self.assertIn("Moved to the new history", out)
+        self.assertIn("pre-cleanup-backup", out)
+        self.assertEqual(sc.call_args_list[4][0][0][:2], ["git", "branch"])
+        self.assertEqual(sc.call_args_list[5][0][0][:3], ["git", "checkout", "-q"])
+
+    def test_old_history_with_local_edits_stops(self):
+        """#1276 with edited tracked files: nothing is touched, the two commands are printed instead."""
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / ".git").mkdir()
+            rc, sc, _sr, out = self.run_fetch(d, [0, 1, 1], runs=["false", " M setup.py"])
+        self.assertEqual(rc, 1)
+        self.assertIn("git branch pre-cleanup-backup && git stash push", out)
+        self.assertEqual(len(sc.call_args_list), 3)          # no branch/checkout attempted
+
+    def test_git_missing_stops(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / ".git").mkdir()
+            rc, sc, _sr, out = self.run_fetch(d, [1])
+        self.assertEqual(rc, 1)
+        self.assertIn("git is not on PATH", out)
+        self.assertEqual(len(sc.call_args_list), 1)          # no pull attempted
+
+    def test_no_git_gives_zip_guidance_and_continues(self):
+        with tempfile.TemporaryDirectory() as d:
+            rc, sc, _sr, out = self.run_fetch(d, [])
+        self.assertEqual(rc, 0)
+        sc.assert_not_called()
+        self.assertIn("archive/refs/heads/main.zip", out)
+        self.assertIn("Checking this copy's engine and settings meanwhile", out)
+
+    def test_main_update_stops_when_pull_fails(self):
+        with tempfile.TemporaryDirectory() as d:
+            with mock.patch.object(sys, "argv", ["setup.py", "--update"]), \
+                    mock.patch.object(setup, "data_folder", return_value=(Path(d), [])), \
+                    mock.patch.object(setup, "installed_configs", return_value=[]), \
+                    mock.patch.object(setup, "fetch_new_code", return_value=1), \
+                    mock.patch.object(setup, "update_install") as up, \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(setup.main(), 1)
+        up.assert_not_called()                               # nothing is touched after a failed pull
 
 
 class SettingsLine(unittest.TestCase):
