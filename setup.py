@@ -1654,18 +1654,21 @@ def install_uv():
 
 
 def uv_cmd() -> list:
-    """The command that installs packages into this .venv: uv on PATH, else the uv package installed here,
-    else uv's own installer downloads uv once (pinned) into .uvbin next to setup.py — pip is nowhere in
-    this chain.  uv resolves the pinned list 10-100x faster than pip and reads requirements.txt's markers
-    as pip does (measured with uv 0.12.23)."""
-    p = shutil.which("uv")
-    if p:
-        return [p]
-    if _module_present("uv"):
-        return [sys.executable, "-m", "uv"]
+    """The command that installs packages into this .venv: the uv in .uvbin, else the uv package installed
+    in .venv, else uv's own installer downloads uv once (pinned) into .uvbin next to setup.py — pip is
+    nowhere in this chain and a uv from the PC is deliberately not used: Strata's uv lives in the folder.
+    UV_CACHE_DIR + UV_PYTHON_INSTALL_DIR (set here, overridable) keep uv's download cache and the CPython
+    it downloads inside .uvbin too, so deleting the Strata folder deletes everything Strata installed
+    (measured with 0.12.23: a confined uv put its cache and a downloaded cpython-3.13 in .uvbin, the uv
+    folder in the user profile untouched).  uv resolves the pinned list 10-100x faster than pip and reads
+    requirements.txt's markers as pip does."""
+    os.environ.setdefault("UV_CACHE_DIR", str(ROOT / ".uvbin" / "cache"))
+    os.environ.setdefault("UV_PYTHON_INSTALL_DIR", str(ROOT / ".uvbin" / "python"))
     local = _local_uv()
     if local:
         return [str(local)]
+    if _module_present("uv"):
+        return [sys.executable, "-m", "uv"]
     say(f"  Installing uv {UV_VERSION} (the package installer) into .uvbin ...")
     install_uv()
     local = _local_uv()

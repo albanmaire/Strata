@@ -1,7 +1,9 @@
-# strata-bootstrap.ps1 - Strata's Windows bootstrap: uv does everything.
-# Finds uv (PATH, or the .uvbin folder), installs it with its official installer when it is nowhere (pinned,
-# into .uvbin, no PATH edit, no admin rights), then 'uv venv' makes .venv: uv uses a Python 3.10+ already on
-# the PC and downloads its own CPython only when none is found (a folder of its own, no admin rights).
+# strata-bootstrap.ps1 - Strata's Windows bootstrap: uv does everything, inside this folder.
+# Strata's uv lives in .uvbin (installed with its official installer when absent: pinned, no PATH edit, no
+# admin rights); a uv from the PC is only a last resort.  UV_CACHE_DIR + UV_PYTHON_INSTALL_DIR keep uv's
+# cache and the CPython it downloads inside .uvbin too: deleting the Strata folder deletes everything.
+# 'uv venv' then makes .venv: uv uses a Python 3.10+ already on the PC and downloads its own CPython only
+# when none is found (into .uvbin/python, no admin rights).
 # winget and the python.org installer are gone.  STRATA.bat is the thin entry; this file holds the whole logic.
 # Written for Windows PowerShell 5.1 - what every Windows 10/11 ships: no '&&', no ternary.
 
@@ -11,11 +13,11 @@ Set-Location (Split-Path -Parent $PSScriptRoot)
 $UvVersion = '0.12.23'          # the same pin setup.py uses
 $UvDir = Join-Path (Get-Location) '.uvbin'
 $UvExe = Join-Path $UvDir 'uv.exe'
+$env:UV_CACHE_DIR = Join-Path $UvDir 'cache'            # uv's download cache: in the folder
+$env:UV_PYTHON_INSTALL_DIR = Join-Path $UvDir 'python'  # the CPython uv downloads: in the folder
 
 function Find-StrataUv {
-    # uv on PATH, else the uv the installer put into .uvbin
-    $cmd = Get-Command uv -ErrorAction SilentlyContinue
-    if ($cmd) { return $cmd.Source }
+    # Strata's own uv in .uvbin first: nothing Strata installs may live outside the folder
     if (Test-Path $UvExe) { return $UvExe }
     return $null
 }
@@ -34,6 +36,10 @@ $venvPy = Join-Path (Get-Location) '.venv\Scripts\python.exe'
 if (-not (Test-Path $venvPy)) {
     $uv = Find-StrataUv
     if (-not $uv) { $uv = Install-StrataUv }
+    if (-not $uv) {   # last resort: a uv already on the PC (the env above keeps its cache and Python confined)
+        $cmd = Get-Command uv -ErrorAction SilentlyContinue
+        if ($cmd) { $uv = $cmd.Source }
+    }
     if (-not $uv) {
         Write-Host ''
         Write-Host '  uv could not be installed automatically (no internet, or PowerShell was blocked).'

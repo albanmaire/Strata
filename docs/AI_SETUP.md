@@ -109,8 +109,9 @@ The flags (all of them: `STRATA.bat --help`):
 block your shell. Start it separately in step 6.
 
 Notes:
-- **Linux:** setup installs uv with its own installer (no sudo) and uv makes the Python environment - a Python
-  already on the PC is used, uv downloads its own only when none is found. On AMD setup may still need
+- **Linux:** setup installs uv with its own installer (no sudo) into the Strata folder's .uvbin and uv makes the
+  Python environment - a Python already on the PC is used, uv downloads its own only when none is found (into
+  .uvbin too: everything Strata installs stays in the folder). On AMD setup may still need
   `build-essential` and `git` through `sudo apt`. You cannot type the user's password: if a `sudo` step is needed,
   ask the user to run it (e.g. `sudo apt install build-essential git`) and then rerun setup.
 - **AMD on Linux:** setup installs ROCm into `.venv` (~10 GB, no sudo) unless a system ROCm 7 exists, and compiles the

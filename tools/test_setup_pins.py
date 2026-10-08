@@ -350,15 +350,31 @@ class Requirements(unittest.TestCase):
 
 
 class UvCommand(unittest.TestCase):
-    """setup.py installs with uv: uv on PATH, else the uv package in .venv, else uv's own installer
-    downloads uv (pinned) into .uvbin — pip is nowhere in the chain."""
+    """setup.py installs with uv: Strata's own uv in .uvbin first, else the uv package in .venv, else uv's
+    own installer downloads uv (pinned) into .uvbin — pip is nowhere in the chain and a uv from the PC is
+    not used: everything Strata installs stays inside the folder (UV_CACHE_DIR + UV_PYTHON_INSTALL_DIR)."""
 
-    def test_uv_on_path(self):
-        with mock.patch.object(setup.shutil, "which", lambda n: "/usr/local/bin/uv"):
-            self.assertEqual(setup.uv_cmd(), ["/usr/local/bin/uv"])
+    def test_uvbin_uv_wins_over_a_uv_on_path(self):
+        """A uv installed on the PC is deliberately NOT used: Strata's uv lives in the folder, so deleting
+        the folder deletes everything Strata installed."""
+        local = setup.ROOT / ".uvbin" / ("uv.exe" if setup.WIN else "uv")
+        with mock.patch.object(setup.shutil, "which", lambda n: "/usr/local/bin/uv"), \
+                mock.patch.object(setup, "_local_uv", return_value=local):
+            self.assertEqual(setup.uv_cmd(), [str(local)])
+
+    def test_uv_install_keeps_everything_in_the_folder(self):
+        """UV_CACHE_DIR + UV_PYTHON_INSTALL_DIR point inside .uvbin (measured with 0.12.23: a confined uv
+        put its cache and a downloaded cpython-3.13 there, the uv folder in the user profile untouched)."""
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(setup, "ROOT", Path(d)), \
+                mock.patch.dict(setup.os.environ, {}, clear=True), \
+                mock.patch.object(setup, "_local_uv", return_value=Path(d) / ".uvbin" / "uv"):
+            setup.uv_cmd()
+            self.assertEqual(setup.os.environ["UV_CACHE_DIR"], str(Path(d) / ".uvbin" / "cache"))
+            self.assertEqual(setup.os.environ["UV_PYTHON_INSTALL_DIR"], str(Path(d) / ".uvbin" / "python"))
 
     def test_uv_installed_in_the_venv(self):
         with mock.patch.object(setup.shutil, "which", lambda n: None), \
+                mock.patch.object(setup, "_local_uv", return_value=None), \
                 mock.patch.object(setup, "_module_present", lambda n: n == "uv"):
             self.assertEqual(setup.uv_cmd(), [sys.executable, "-m", "uv"])
 
@@ -400,10 +416,11 @@ class UvCommand(unittest.TestCase):
         ran = []
         with tempfile.TemporaryDirectory() as d, \
                 mock.patch.object(setup.sys, "prefix", d), \
-                mock.patch.object(setup.shutil, "which", lambda n: "uv"), \
+                mock.patch.object(setup, "_local_uv", return_value=Path(d) / ".uvbin" / "uv"), \
                 mock.patch.object(setup, "run", lambda cmd, **kw: ran.append(cmd)):
             quiet(setup.uv_install, ["numpy==2.5.3"], "numpy")
-        self.assertEqual(ran, [["uv", "pip", "install", "--python", sys.executable, "--quiet", "numpy==2.5.3"]])
+        self.assertEqual(ran, [[str(Path(d) / ".uvbin" / "uv"), "pip", "install",
+                                "--python", sys.executable, "--quiet", "numpy==2.5.3"]])
 
 
 if __name__ == "__main__":

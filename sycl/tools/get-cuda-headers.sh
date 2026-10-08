@@ -2,7 +2,10 @@
 # SYCLomatic needs CUDA SDK headers to parse the sources (no GPU, no toolkit). The pip-format wheels carry them.
 set -euo pipefail
 out=${1:-$PWD/cuda-headers}      # mount this at /cuda-headers in the dev image
-uv=${UV:-$(command -v uv || true)}   # uv installs with --target; pip is not needed here
+# Strata's own uv in .uvbin first (the folder holds everything Strata installs); a uv on the PC as fallback
+uv=${UV:-}
+[ -n "$uv" ] || for c in .uvbin/uv .uvbin/bin/uv; do [ -x "$c" ] && { uv=$c; break; }; done
+[ -n "$uv" ] || uv=$(command -v uv || true)
 [ -n "$uv" ] || { echo "uv is needed (https://docs.astral.sh/uv/)"; exit 1; }
 mkdir -p "$out/include"
 # uv pip install --target unpacks the wheels straight into $out/wheels (no download subcommand in uv pip)

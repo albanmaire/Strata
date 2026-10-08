@@ -1,9 +1,11 @@
 #!/bin/sh
-# strata-bootstrap.sh - Strata's Linux bootstrap: uv does everything.
-# Finds uv (PATH, or the .uvbin folder) and installs it with its official installer when it is nowhere
-# (pinned, into .uvbin, no sudo, no PATH edit).  'uv venv' then makes .venv: uv uses a Python 3.10+ already
-# on the PC and downloads its own CPython only when none is found - apt/dnf/pacman and sudo are gone from
-# this script (setup.py still uses sudo for build tools when it compiles the engine).
+# strata-bootstrap.sh - Strata's Linux bootstrap: uv does everything, inside this folder.
+# Strata's uv lives in .uvbin (installed with its official installer when absent: pinned, no sudo, no PATH
+# edit); a uv from the PC is only a last resort.  UV_CACHE_DIR + UV_PYTHON_INSTALL_DIR keep uv's cache and
+# the CPython it downloads inside .uvbin too: deleting the Strata folder deletes everything.
+# 'uv venv' then makes .venv: uv uses a Python 3.10+ already on the PC and downloads its own CPython only
+# when none is found - apt/dnf/pacman and sudo are gone from this script (setup.py still uses sudo for
+# build tools when it compiles the engine).
 # STRATA.sh is the thin entry; this file holds the whole logic.
 # The git pull of --update is NOT here: it lives in setup.py (fetch_new_code), so no script has to run
 # git pull inside itself.
@@ -12,7 +14,7 @@ cd "$(dirname "$0")/.." || exit 1
 UV_VERSION=0.12.23   # the same pin setup.py uses
 
 find_uv() {
-  command -v uv 2>/dev/null && return 0
+  # Strata's own uv in .uvbin first: nothing Strata installs may live outside the folder
   for c in .uvbin/uv .uvbin/bin/uv .uvbin/uv.exe .uvbin/bin/uv.exe; do
     [ -x "$c" ] && { echo "$c"; return 0; }
   done
@@ -27,9 +29,12 @@ install_uv() {
   find_uv
 }
 
+export UV_CACHE_DIR="$PWD/.uvbin/cache"           # uv's download cache: in the folder
+export UV_PYTHON_INSTALL_DIR="$PWD/.uvbin/python" # the CPython uv downloads: in the folder
 if [ ! -x .venv/bin/python ]; then
   UV="$(find_uv || true)"
   [ -n "$UV" ] || UV="$(install_uv || true)"
+  [ -n "$UV" ] || UV="$(command -v uv 2>/dev/null || true)"   # last resort: a uv on the PC (the env above confines it)
   if [ -z "$UV" ]; then
     echo "uv could not be installed automatically (no internet, or curl/wget missing)."
     echo "Install uv $UV_VERSION (https://docs.astral.sh/uv/) and run ./STRATA.sh again."

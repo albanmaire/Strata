@@ -41,11 +41,15 @@ set "WANT=%STRATA_ROCM_VERSION% %EXTRAS%"
 set "HAVE="
 if exist "%STAMP%" set /p HAVE=<"%STAMP%"
 rem uv installs (the same installer setup.py uses when uv is nowhere: pinned, private folder, no PATH edit).
+rem Strata's uv in .uvbin first; a uv from the PC only as a last resort.  UV_CACHE_DIR + UV_PYTHON_INSTALL_DIR
+rem keep uv's cache and any downloaded CPython inside .uvbin: everything Strata installs stays in the folder.
+set "UVDIR=%SRC%\.uvbin"
+set "UV_CACHE_DIR=%UVDIR%\cache"
+set "UV_PYTHON_INSTALL_DIR=%UVDIR%\python"
 set "UV="
-where uv >nul 2>nul && set "UV=uv"
+if exist "%UVDIR%\uv.exe" set "UV=%UVDIR%\uv.exe"
 if not defined UV "%ROCM_VENV%\Scripts\python.exe" -m uv --version >nul 2>nul && set "UV=%ROCM_VENV%\Scripts\python.exe -m uv"
 if not defined UV (
-  set "UVDIR=%SRC%\.uvbin"
   set "UV_INSTALL_DIR=%UVDIR%"
   set "UV_NO_MODIFY_PATH=1"
   powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/0.12.23/install.ps1 | iex" || exit /b 1
