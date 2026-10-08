@@ -416,7 +416,8 @@ What the first start installs: in this folder `.venv/`, `engine/` and `third_par
 elsewhere) finds them and sets itself up the same way. The place is remembered per user (`%APPDATA%\Strata\settings.json`,
 `~/.config/strata/settings.json`); `--data-dir` chooses another. Installs from before 0.1.16 are moved there by the next
 start (a rename on the same drive; files on another drive are used where they are).
-Python 3.12 if you have none (for your user account, no admin), a private Python environment, NVIDIA's CUDA libraries
+uv (installed with its own installer, no admin) makes the private Python environment, using a Python 3.10+
+already on the PC or downloading its own when none is found; NVIDIA's CUDA libraries
 (installed with uv, ~0.4 GB), the ready-made Strata engine for RTX 20/30/40/50, the model and the MTP draft layer. If no
 ready-made engine fits your PC, it offers to install the build tools (Visual Studio Build Tools + CUDA Toolkit on
 Windows, `build-essential` + CUDA on Ubuntu) and compiles the engine for your GPU (asks first; 20-40 minutes once).

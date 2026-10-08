@@ -1694,11 +1694,22 @@ def install_job(spec_path: str) -> int:
             venv = root / ".venv"
             if not py.exists():
                 print(f"strata-mcp: creating Strata's Python environment in {venv} ...", flush=True)
-                r = subprocess.run([spec["base_python"], "-m", "venv", str(venv)])
+                # uv makes it (the same way STRATA.bat / STRATA.sh do): a Python already on the PC is used,
+                # uv downloads its own only when none fits.  Without uv, the standard venv still works.
+                uv = shutil.which("uv")
+                if uv is None:
+                    for cand in (".uvbin/uv.exe", ".uvbin/uv", ".uvbin/bin/uv.exe", ".uvbin/bin/uv"):
+                        if (root / cand).exists():
+                            uv = str(root / cand)
+                            break
+                if uv:
+                    r = subprocess.run([uv, "venv", "--python", ">=3.10", str(venv)], cwd=str(root))
+                else:
+                    r = subprocess.run([spec["base_python"], "-m", "venv", str(venv)])
                 if r.returncode or not py.exists():
                     print("\n  [X]  could not create the Python environment (.venv)", flush=True)
-                    print("       Linux: install python3-venv (sudo apt install python3-venv) or run ./STRATA.sh "
-                          "once in a terminal", flush=True)
+                    print("       run ./STRATA.sh (or STRATA.bat) once in a terminal: it installs uv and", flush=True)
+                    print("       makes .venv with it", flush=True)
                     record(exit_code=1, ended=time.strftime("%Y-%m-%d %H:%M:%S"))
                     return 1
         cmd = [str(py), str(root / "setup.py"), *spec["args"]]
