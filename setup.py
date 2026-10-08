@@ -1286,7 +1286,7 @@ def find_vcvars(cuda_v=None):
 
 
 def find_tool(name):
-    """A tool on PATH, or the one installed next to this Python in .venv (cmake, ninja; uv or pip put them there)."""
+    """A tool on PATH, or the one installed next to this Python in .venv (cmake, ninja; uv puts them there)."""
     p = shutil.which(name)
     if p:
         return p
@@ -1626,18 +1626,53 @@ def _module_present(name: str) -> bool:
         return False
 
 
+def _local_uv():
+    """uv installed by install_uv next to setup.py (.uvbin).  The official installer puts the binary in
+    .uvbin on Windows and in .uvbin/bin on Unix (measured with 0.12.23); both layouts are checked."""
+    for cand in (".uvbin/uv.exe", ".uvbin/uv", ".uvbin/bin/uv.exe", ".uvbin/bin/uv"):
+        p = ROOT / cand
+        if p.exists():
+            return p
+    return None
+
+
+def install_uv():
+    """Install uv with its official installer, pinned to UV_VERSION, into .uvbin next to setup.py.
+    UV_INSTALL_DIR + UV_NO_MODIFY_PATH=1 keep it to that one folder: no PATH edit, no admin rights
+    (measured with 0.12.23: the PowerShell installer on Windows, the curl one on Unix)."""
+    dest = ROOT / ".uvbin"
+    dest.mkdir(parents=True, exist_ok=True)
+    if WIN:
+        ps = (f"$env:UV_INSTALL_DIR='{dest}'; $env:UV_NO_MODIFY_PATH='1'; "
+              f"irm https://astral.sh/uv/{UV_VERSION}/install.ps1 | iex")
+        run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps])
+    else:
+        fetch = (f"curl -LsSf https://astral.sh/uv/{UV_VERSION}/install.sh"
+                 if shutil.which("curl") else
+                 f"wget -qO- https://astral.sh/uv/{UV_VERSION}/install.sh")
+        run(["sh", "-c", f'{fetch} | UV_INSTALL_DIR="{dest}" UV_NO_MODIFY_PATH=1 sh'])
+
+
 def uv_cmd() -> list:
     """The command that installs packages into this .venv: uv on PATH, else the uv package installed here,
-    else pip installs uv once (pinned) and uv runs from .venv after that.  uv resolves the pinned list
-    10-100x faster than pip and reads requirements.txt's markers as pip does (measured with uv 0.12.23)."""
+    else uv's own installer downloads uv once (pinned) into .uvbin next to setup.py — pip is nowhere in
+    this chain.  uv resolves the pinned list 10-100x faster than pip and reads requirements.txt's markers
+    as pip does (measured with uv 0.12.23)."""
     p = shutil.which("uv")
     if p:
         return [p]
     if _module_present("uv"):
         return [sys.executable, "-m", "uv"]
-    say(f"  Installing uv {UV_VERSION} (the package installer) into .venv ...")
-    run([sys.executable, "-m", "pip", "install", "--quiet", "--disable-pip-version-check", f"uv=={UV_VERSION}"])
-    return [sys.executable, "-m", "uv"]
+    local = _local_uv()
+    if local:
+        return [str(local)]
+    say(f"  Installing uv {UV_VERSION} (the package installer) into .uvbin ...")
+    install_uv()
+    local = _local_uv()
+    if local is None:
+        fail("uv could not be installed into .uvbin",
+             f"install uv {UV_VERSION} yourself (https://docs.astral.sh/uv/) and run setup again")
+    return [str(local)]
 
 
 def uv_install(packages, what):
@@ -3132,7 +3167,7 @@ def install_build_tools(gpu, yes):
 def cmake_build(src, bdir, target, defs, vcvars, bat_name):
     cmake, ninja = find_tool("cmake"), find_tool("ninja")
     if cmake is None or ninja is None:
-        fail("cmake / ninja not found after installing them", "run: .venv python -m uv pip install cmake ninja (or .venv python -m pip install cmake ninja)")
+        fail("cmake / ninja not found after installing them", "install uv (https://docs.astral.sh/uv/) and run: uv pip install cmake ninja")
     conf = [cmake, "-G", "Ninja", f"-DCMAKE_MAKE_PROGRAM={ninja}", "-S", str(src), "-B", str(bdir),
             "-DCMAKE_BUILD_TYPE=Release", *defs]
     build = [cmake, "--build", str(bdir), "--target", target, "-j", str(max(2, (os.cpu_count() or 4) // 2))]

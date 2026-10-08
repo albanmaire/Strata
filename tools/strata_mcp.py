@@ -173,7 +173,7 @@ def proc_terminate(pid, ident) -> bool:
 
 
 def proc_kill_tree(pid, ident) -> bool:
-    """End a process WE started together with the processes it started (setup's pip / cmake, the engine)."""
+    """End a process WE started together with the processes it started (setup's uv / cmake, the engine)."""
     if not proc_alive(pid, ident):
         return False
     if WIN:
@@ -1692,9 +1692,6 @@ def install_job(spec_path: str) -> int:
     try:
         if spec.get("create_venv"):
             venv = root / ".venv"
-            if py.exists() and subprocess.run([str(py), "-m", "pip", "--version"], capture_output=True).returncode:
-                print("strata-mcp: .venv has no pip (an earlier run stopped half-way): making it again", flush=True)
-                shutil.rmtree(venv, ignore_errors=True)
             if not py.exists():
                 print(f"strata-mcp: creating Strata's Python environment in {venv} ...", flush=True)
                 r = subprocess.run([spec["base_python"], "-m", "venv", str(venv)])

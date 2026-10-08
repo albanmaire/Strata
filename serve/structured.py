@@ -46,7 +46,7 @@ def jsonschema_modules():
             except ImportError:
                 _jsonschema = False
                 print('[strata] response_format json_schema: the Python package jsonschema is not installed, so '
-                      'answers are only checked to be one JSON object (python -m pip install "jsonschema>=4.23,<5")',
+                      'answers are only checked to be one JSON object (uv pip install "jsonschema>=4.23,<5")',
                       flush=True)
         return _jsonschema or None
 

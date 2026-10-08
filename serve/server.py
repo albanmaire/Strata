@@ -1988,7 +1988,7 @@ class Vision:
             import io
             from PIL import Image
         except ImportError:
-            raise ValueError("this image format needs Pillow (python -m pip install pillow); JPEG, PNG, BMP and "
+            raise ValueError("this image format needs Pillow (uv pip install pillow); JPEG, PNG, BMP and "
                              "GIF work without it") from None
         try:
             im = Image.open(io.BytesIO(data))

@@ -166,7 +166,7 @@ migration tool.
 **How it was made, so it can be redone.**
 
 1. `sycl/tools/Dockerfile` - the dev image: the llama.cpp SYCL image plus SYCLomatic (`dpct` 2025.3),
-   ninja, and the CUDA 12.8 headers that `sycl/tools/get-cuda-headers.sh` pulls out of NVIDIA's pip wheels
+   ninja, and the CUDA 12.8 headers that `sycl/tools/get-cuda-headers.sh` pulls out of NVIDIA's wheels
    (dpct parses CUDA; it needs the headers, not the toolkit).
 2. `sycl/tools/migrate.sh` - writes a compilation database for the 86 CUDA-touching translation units and
    runs dpct over them. 85 migrate; dpct reports no line it could not migrate, and about 1,400 advisory

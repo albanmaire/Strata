@@ -48,7 +48,7 @@ ENV DEBIAN_FRONTEND=noninteractive PYTHONUNBUFFERED=1 LANG=C.UTF-8 STRATA_EXECV=
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential ca-certificates curl git libatomic1 libgomp1 \
-        python3 python3-pip python3-venv unzip \
+        python3 python3-venv unzip \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/strata
@@ -60,8 +60,8 @@ ARG CUDA_ARCHITECTURES=75;80;86;89;120
 ARG BUILD_VISION=1
 
 RUN python3 -m venv .venv \
-    && .venv/bin/pip install --no-cache-dir --upgrade pip \
-    && .venv/bin/pip install --no-cache-dir -r requirements.txt \
+    && curl -LsSf https://astral.sh/uv/install.sh | UV_INSTALL_DIR=/opt/strata/.uvbin UV_NO_MODIFY_PATH=1 sh \
+    && .uvbin/uv pip install --python .venv/bin/python --no-cache-dir -r requirements.txt \
     && chmod +x STRATA.sh docker-entrypoint.sh
 
 # llama.cpp at the pinned commit, then the engine and the image encoder, built

@@ -350,7 +350,8 @@ class Requirements(unittest.TestCase):
 
 
 class UvCommand(unittest.TestCase):
-    """setup.py installs with uv: uv on PATH, else the uv package in .venv, else pip installs uv once (pinned)."""
+    """setup.py installs with uv: uv on PATH, else the uv package in .venv, else uv's own installer
+    downloads uv (pinned) into .uvbin — pip is nowhere in the chain."""
 
     def test_uv_on_path(self):
         with mock.patch.object(setup.shutil, "which", lambda n: "/usr/local/bin/uv"):
@@ -361,14 +362,39 @@ class UvCommand(unittest.TestCase):
                 mock.patch.object(setup, "_module_present", lambda n: n == "uv"):
             self.assertEqual(setup.uv_cmd(), [sys.executable, "-m", "uv"])
 
-    def test_no_uv_anywhere_bootstraps_it_with_pip_once(self):
+    def test_no_uv_anywhere_downloads_it_with_its_own_installer(self):
         ran = []
+        local = setup.ROOT / ".uvbin" / "uv"
         with mock.patch.object(setup.shutil, "which", lambda n: None), \
                 mock.patch.object(setup, "_module_present", lambda n: False), \
+                mock.patch.object(setup, "_local_uv", side_effect=[None, local]), \
                 mock.patch.object(setup, "run", lambda cmd, **kw: ran.append(cmd)):
-            self.assertEqual(setup.uv_cmd(), [sys.executable, "-m", "uv"])
-        self.assertEqual(ran, [[sys.executable, "-m", "pip", "install", "--quiet",
-                                "--disable-pip-version-check", f"uv=={setup.UV_VERSION}"]])
+            self.assertEqual(setup.uv_cmd(), [str(local)])
+        self.assertEqual(len(ran), 1)                      # the installer ran once
+        self.assertNotIn("pip", [str(c) for c in ran[0]])  # pip is not the bootstrap
+
+    def test_installer_is_pinned_and_keeps_to_uvbin(self):
+        ran = []
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(setup, "ROOT", Path(d)), \
+                mock.patch.object(setup, "run", lambda cmd, **kw: ran.append(cmd)):
+            setup.install_uv()
+        cmd = [str(c) for c in ran[0]]
+        self.assertIn(f"astral.sh/uv/{setup.UV_VERSION}/install", " ".join(cmd))
+        self.assertIn("UV_NO_MODIFY_PATH", " ".join(cmd))   # no PATH edit
+        self.assertIn(str(Path(d) / ".uvbin"), " ".join(cmd))
+
+    def test_local_uv_layouts(self):
+        """_local_uv finds the binary wherever the installer put it: .uvbin (Windows) or .uvbin/bin (Unix)."""
+        for cand in ("uv.exe", "uv", "bin/uv.exe", "bin/uv"):
+            with tempfile.TemporaryDirectory() as d:
+                f = Path(d) / ".uvbin" / cand
+                f.parent.mkdir(parents=True, exist_ok=True)
+                f.write_text("")
+                with mock.patch.object(setup, "ROOT", Path(d)):
+                    self.assertEqual(setup._local_uv(), f)
+        with tempfile.TemporaryDirectory() as d:
+            with mock.patch.object(setup, "ROOT", Path(d)):
+                self.assertIsNone(setup._local_uv())
 
     def test_uv_install_runs_uv_pip_install_into_this_venv(self):
         ran = []
