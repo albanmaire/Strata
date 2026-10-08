@@ -173,7 +173,7 @@ class Install(unittest.TestCase):
     def run_setup(self, ram, found, argv, env=None):
         calls, libs = [], []
         extra = [mock.patch.object(setup, "get_prebuilt", fake_prebuilt(calls)),
-                 mock.patch.object(setup, "pip_cuda_libs", lambda tk=13: libs.append(tk)),
+                 mock.patch.object(setup, "cuda_libs_install", lambda tk=13: libs.append(tk)),
                  mock.patch.object(setup, "OLD_GPUS", None),
                  mock.patch.dict(os.environ, {"STRATA_EXPERIMENTAL_SM60": "", "STRATA_CUDA": "", **(env or {})})]
         code, out, cfg, asked = install(ram, found, argv, extra=extra)
@@ -252,7 +252,7 @@ class Start(unittest.TestCase):
             calls = []
             with mock.patch.object(setup, "ROOT", root), \
                     mock.patch.object(setup, "get_prebuilt", fake_prebuilt(calls)), \
-                    mock.patch.object(setup, "pip_cuda_libs", lambda tk=13: None), \
+                    mock.patch.object(setup, "cuda_libs_install", lambda tk=13: None), \
                     mock.patch.object(setup, "cuda_lib_dirs", lambda tk=13: [f"<cu{tk}>"]), \
                     mock.patch.object(setup, "gpu_info", lambda i=None: None):
                 got, text = quiet(setup.ensure_engine_for, [card(0, "RTX 3090", 24.0, "86"), {**V100, "index": 1}],

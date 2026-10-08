@@ -23,7 +23,7 @@ this for you with [AI_SETUP.md](AI_SETUP.md).
 The driver is the only thing you install yourself. Everything else - Python, the engine, the model - is set up for
 you the first time: Python 3.12 if you have none (for your user account, no admin), a private Python environment in
 `.venv/`, the Strata engine, the model and the MTP draft layer. On NVIDIA it uses the ready-made engine for RTX
-20/30/40/50 and NVIDIA's CUDA libraries from pip (~0.4 GB); if no ready-made engine fits your PC, it offers to install
+20/30/40/50 and NVIDIA's CUDA libraries, installed with uv (~0.4 GB); if no ready-made engine fits your PC, it offers to install
 the build tools (Visual Studio Build Tools + CUDA Toolkit on Windows, `build-essential` + CUDA on Ubuntu) and compiles
 the engine for your GPU (asks first; 20-40 minutes once). More: [details](DETAILS.md#before-you-start).
 

@@ -178,7 +178,7 @@ PREBUILT_URL = "https://github.com/Niko1221/Strata/releases/latest/download/"
 REPO = "Niko1221/Strata"
 PREBUILT_TAG_URL = "https://github.com/Niko1221/Strata/releases/download/v{version}/"
 PREBUILT_ASSET = "strata-windows-x64.zip" if WIN else "strata-linux-x64.zip"
-# the CUDA libraries the ready-made engine loads (the same CUDA 13.0 it is built with), from NVIDIA's pip packages
+# the CUDA libraries the ready-made engine loads (the same CUDA 13.0 it is built with), from NVIDIA's PyPI wheels
 CUDA_WHEELS = ["nvidia-cublas==13.0.2.14", "nvidia-cuda-runtime==13.0.96"]
 MIN_DRIVER = 580                       # CUDA 13.0
 # Older NVIDIA GPUs (experimental): CUDA 13 dropped Pascal (sm_60/61) and Volta (sm_70), so a model whose GPUs include
@@ -197,6 +197,7 @@ MIN_ENGINE = (0, 1, 41)                # versions compare all numbers; v0.1.41: 
 KV_CELL_BYTES = {"q4_0": 576, "k8v4": 816}
 PY_PACKAGES = ["numpy", "jinja2", "regex", "pyyaml", "tqdm", "requests", "cmake", "ninja", "pillow", "psutil"]
 REQUIREMENTS = ROOT / "requirements.txt"   # the same packages and their dependencies, pinned (#214)
+UV_VERSION = "0.12.23"                     # uv, the installer setup.py uses (pinned like the packages); uv on PATH is used as it is
 
 MODELS = {
     # the original model only for now: Swift 1.5's Q2_0 files split one layer's experts across the two shards, which
@@ -1285,7 +1286,7 @@ def find_vcvars(cuda_v=None):
 
 
 def find_tool(name):
-    """A tool on PATH, or the one pip installed next to this Python (cmake, ninja)."""
+    """A tool on PATH, or the one installed next to this Python in .venv (cmake, ninja; uv or pip put them there)."""
     p = shutil.which(name)
     if p:
         return p
@@ -1617,11 +1618,37 @@ def _installed(name: str) -> bool:
         return False
 
 
-def pip_install(packages, what):
-    """pip install into .venv, skipped when the same list was installed before.  An install from before the pinned
-    requirements (#214) recorded bare names: those packages are kept as they are (nothing is reinstalled), and the
-    pinned dependencies it already has count as installed."""
-    stamp = Path(sys.prefix) / ".strata-pip.json"
+def _module_present(name: str) -> bool:
+    try:
+        import importlib.util
+        return importlib.util.find_spec(name) is not None
+    except Exception:
+        return False
+
+
+def uv_cmd() -> list:
+    """The command that installs packages into this .venv: uv on PATH, else the uv package installed here,
+    else pip installs uv once (pinned) and uv runs from .venv after that.  uv resolves the pinned list
+    10-100x faster than pip and reads requirements.txt's markers as pip does (measured with uv 0.12.23)."""
+    p = shutil.which("uv")
+    if p:
+        return [p]
+    if _module_present("uv"):
+        return [sys.executable, "-m", "uv"]
+    say(f"  Installing uv {UV_VERSION} (the package installer) into .venv ...")
+    run([sys.executable, "-m", "pip", "install", "--quiet", "--disable-pip-version-check", f"uv=={UV_VERSION}"])
+    return [sys.executable, "-m", "uv"]
+
+
+def uv_install(packages, what):
+    """uv pip install into .venv, skipped when the same list was installed before.  An install from before the
+    pinned requirements (#214) recorded bare names: those packages are kept as they are (nothing is
+    reinstalled), and the pinned dependencies it already has count as installed."""
+    stamp = Path(sys.prefix) / ".strata-install.json"
+    if not stamp.exists():
+        legacy = Path(sys.prefix) / ".strata-pip.json"     # an install made with pip: its list still counts
+        if legacy.exists():
+            stamp = legacy
     have = json.loads(stamp.read_text(encoding="utf-8")) if stamp.exists() else []
     bare = {p.lower() for p in have if req_name(p) == p.lower()}
     need = [p for p in packages if p not in have and req_name(p) not in bare
@@ -1630,13 +1657,13 @@ def pip_install(packages, what):
         ok(f"{what} already installed")
         return
     say(f"  Installing {what} ...")
-    run([sys.executable, "-m", "pip", "install", "--quiet", "--disable-pip-version-check", *need])
+    run([*uv_cmd(), "pip", "install", "--python", sys.executable, "--quiet", *need])
     stamp.write_text(json.dumps(sorted(set(have) | set(need)), indent=0))
     ok(f"{what} installed")
 
 
 def cuda_lib_dirs(toolkit=13):
-    """Where pip put NVIDIA's CUDA libraries (nvidia/cu13/bin/x86_64 on Windows, nvidia/cu13/lib on Linux).
+    """Where the NVIDIA CUDA wheels landed (nvidia/cu13/bin/x86_64 on Windows, nvidia/cu13/lib on Linux).
     toolkit 12: the CUDA 12 wheels' cuBLAS and runtime, in two folders (nvidia/cublas/bin, nvidia/cuda_runtime/bin)."""
     if int(toolkit) == 12:
         patterns = ("cublas64_12.dll", "cudart64_12.dll") if WIN else ("libcublas.so.12*", "libcudart.so.12*")
@@ -1724,7 +1751,7 @@ def rocm_index_versions(html):
 def rocm_pick(available, preferred):
     """(version, note) for an index that lists `available`: `preferred` when it is there, else the newest of the same
     7.x line, else the newest of the same major (the note says so); `preferred` unchanged when the list is empty (the
-    index could not be read: pip then reports its own error) or nothing of that major exists (the note says so)."""
+    index could not be read: uv then reports its own error) or nothing of that major exists (the note says so)."""
     if not available or preferred in available:
         return preferred, None
     want = rocm_vkey(preferred)
@@ -2414,10 +2441,10 @@ def rocm_root(archs):
             warn(note)
     if have.get("version") != wheel or have.get("index") != index:
         say(f"  Installing ROCm {wheel} for AMD GPUs into .venv (AMD's TheRock wheels, ~10 GB, no sudo) ...")
-        pip = [sys.executable, "-m", "pip", "install", "--quiet", "--disable-pip-version-check", "--index-url", index]
+        uv = [*uv_cmd(), "pip", "install", "--python", sys.executable, "--quiet", "--index-url", index]
         if have.get("version") == wheel:               # the same version for another GPU family: its own libraries
-            run(pip + ["--force-reinstall", "--no-deps", f"rocm=={wheel}"])
-        run(pip + [f"rocm[libraries,devel]=={wheel}"])
+            run(uv + ["--reinstall-package", "rocm", "--no-deps", f"rocm=={wheel}"])
+        run(uv + [f"rocm[libraries,devel]=={wheel}"])
         stamp.write_text(json.dumps({"version": wheel, "index": index}))
     sdk = Path(sys.executable).parent / "rocm-sdk"
     root = Path(out([str(sdk), "path", "--root"]).strip())
@@ -2980,15 +3007,15 @@ def update_installed_engine(url_base, toolkit=None) -> None:
             info.write_text(meta_text)                 # get_prebuilt drops it before downloading: put it back
         warn(f"could not update the engine: starting the installed {meta.get('version')}")
         return
-    pip_cuda_libs(toolkit)
+    cuda_libs_install(toolkit)
 
 
-def pip_cuda_libs(toolkit=13) -> None:
-    """NVIDIA's cuBLAS and CUDA runtime for a ready-made engine, from pip: CUDA 13's, or the CUDA 12 engine's."""
+def cuda_libs_install(toolkit=13) -> None:
+    """NVIDIA's cuBLAS and CUDA runtime for a ready-made engine, from the wheel indexes (uv): CUDA 13's, or the CUDA 12 engine's."""
     if int(toolkit) == 12:
-        pip_install(CUDA12_WHEELS, "NVIDIA CUDA 12 libraries for the experimental engine (cuBLAS, CUDA runtime; ~0.7 GB)")
+        uv_install(CUDA12_WHEELS, "NVIDIA CUDA 12 libraries for the experimental engine (cuBLAS, CUDA runtime; ~0.7 GB)")
     else:
-        pip_install(CUDA_WHEELS, "NVIDIA CUDA libraries (cuBLAS, CUDA runtime; ~0.4 GB)")
+        uv_install(CUDA_WHEELS, "NVIDIA CUDA libraries (cuBLAS, CUDA runtime; ~0.4 GB)")
 
 
 CUDA_SM120_SUSPECT = (13, 2)   # #892 #968: nvcc 13.2.0 / 13.2.1 (build 13.2.51) for sm_120 made garbage answers (IQ1_S / IQ2_S / IQ3_S) and prompts
@@ -3105,7 +3132,7 @@ def install_build_tools(gpu, yes):
 def cmake_build(src, bdir, target, defs, vcvars, bat_name):
     cmake, ninja = find_tool("cmake"), find_tool("ninja")
     if cmake is None or ninja is None:
-        fail("cmake / ninja not found after installing them", "run: .venv python -m pip install cmake ninja")
+        fail("cmake / ninja not found after installing them", "run: .venv python -m uv pip install cmake ninja (or .venv python -m pip install cmake ninja)")
     conf = [cmake, "-G", "Ninja", f"-DCMAKE_MAKE_PROGRAM={ninja}", "-S", str(src), "-B", str(bdir),
             "-DCMAKE_BUILD_TYPE=Release", *defs]
     build = [cmake, "--build", str(bdir), "--target", target, "-j", str(max(2, (os.cpu_count() or 4) // 2))]
@@ -4071,8 +4098,8 @@ def update_install(have: list, a) -> int:
         say("  No model is installed in this Strata folder yet: run STRATA.bat (Linux: ./STRATA.sh) to set it up -")
         say("  it finds an earlier install's model files next to it and reuses them.")
         return 0
-    pip_install(requirement_lines() if REQUIREMENTS.exists() else PY_PACKAGES,
-                "numpy, jinja2, regex, pyyaml, tqdm, requests, cmake, ninja, pillow, psutil")
+    uv_install(requirement_lines() if REQUIREMENTS.exists() else PY_PACKAGES,
+               "numpy, jinja2, regex, pyyaml, tqdm, requests, cmake, ninja, pillow, psutil")
     if not a.build:
         update_installed_engine(a.prebuilt)
     for cfg_path in have:
@@ -4514,14 +4541,14 @@ def get_cuda12_engine(url_base, gpu, vision, yes, build=False) -> Path:
     CUDA 12 libraries, or compiled here with a CUDA 12.x toolkit (Linux, --build, or no ready-made one)."""
     eng = None if build else get_prebuilt(url_base, gpu, vision, toolkit=12)
     if eng is not None and json.loads((eng / "BUILD.json").read_text(encoding="utf-8")).get("source") != "local":
-        pip_cuda_libs(12)
+        cuda_libs_install(12)
         if vision != "none" and not (eng / VEXE).exists():
             eng = None
     return eng if eng is not None else build_engine(gpu, vision, yes, get_llama_cpp(), toolkit=12)
 
 
 def engine_lib_dirs(eng: Path, toolkit=13) -> list:
-    """The library folders a CUDA engine loads from: its own (a compiled one: the toolkit's), else pip's wheels."""
+    """The library folders a CUDA engine loads from: its own (a compiled one: the toolkit's), else the installed wheels'."""
     meta = json.loads((eng / "BUILD.json").read_text(encoding="utf-8"))
     return meta.get("lib_dirs") or meta.get("cuda_dirs") or cuda_lib_dirs(toolkit)
 
@@ -5267,8 +5294,8 @@ def main() -> int:
 
     # ---- 3. python packages
     step(3, "Python packages")
-    pip_install(requirement_lines() if REQUIREMENTS.exists() else PY_PACKAGES,
-                "numpy, jinja2, regex, pyyaml, tqdm, requests, cmake, ninja, pillow, psutil")
+    uv_install(requirement_lines() if REQUIREMENTS.exists() else PY_PACKAGES,
+               "numpy, jinja2, regex, pyyaml, tqdm, requests, cmake, ninja, pillow, psutil")
 
     # ---- 4. the engine
     step(4, "the Strata engine")
@@ -5286,7 +5313,7 @@ def main() -> int:
         eng = None if a.build or hip else get_prebuilt(a.prebuilt, gpu, vision, **({"toolkit": 12} if cuda_tk == 12
                                                                                     else {}))
     if eng is not None and not hip and json.loads((eng / "BUILD.json").read_text(encoding="utf-8")).get("source") != "local":
-        pip_cuda_libs(cuda_tk)
+        cuda_libs_install(cuda_tk)
         if vision != "none" and not (eng / VEXE).exists():
             warn("the ready-made engine has no image encoder: compiling it")
             eng = None

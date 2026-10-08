@@ -39,9 +39,17 @@ set "STAMP=%ROCM_VENV%\strata-rocm.txt"
 set "WANT=%STRATA_ROCM_VERSION% %EXTRAS%"
 set "HAVE="
 if exist "%STAMP%" set /p HAVE=<"%STAMP%"
+rem uv installs (like setup.py does); pip remains the fallback when uv is nowhere.
+set "UV="
+where uv >nul 2>nul && set "UV=uv"
+if not defined UV "%ROCM_VENV%\Scripts\python.exe" -m uv --version >nul 2>nul && set "UV=%ROCM_VENV%\Scripts\python.exe -m uv"
 if not "!HAVE!"=="!WANT!" (
   echo Installing ROCm %STRATA_ROCM_VERSION% [%EXTRAS%] into %ROCM_VENV% ...
-  "%ROCM_VENV%\Scripts\python.exe" -m pip install --disable-pip-version-check --index-url "%STRATA_ROCM_INDEX%" "rocm[%EXTRAS%]==%STRATA_ROCM_VERSION%" || exit /b 1
+  if defined UV (
+    "!UV!" pip install --python "%ROCM_VENV%\Scripts\python.exe" --index-url "%STRATA_ROCM_INDEX%" "rocm[%EXTRAS%]==%STRATA_ROCM_VERSION%" || exit /b 1
+  ) else (
+    "%ROCM_VENV%\Scripts\python.exe" -m pip install --disable-pip-version-check --index-url "%STRATA_ROCM_INDEX%" "rocm[%EXTRAS%]==%STRATA_ROCM_VERSION%" || exit /b 1
+  )
   "%ROCM_VENV%\Scripts\rocm-sdk.exe" init || exit /b 1
   >"%STAMP%" echo !WANT!
 )

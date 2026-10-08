@@ -39,7 +39,7 @@ per model, so the choice is made per model, by the oldest card that model runs o
 
 - **Every card the model uses is RTX 20 or newer:** the ready-made CUDA 13 engine, as always.
 - **A card is Pascal or Volta:** the CUDA 12 engine. Setup says so (`CUDA 12: sm_70 is older than CUDA 13 supports
-  ...`). On Windows it downloads `strata-windows-x64-cuda12.zip` with NVIDIA's CUDA 12 libraries (from pip, like the
+  ...`). On Windows it downloads `strata-windows-x64-cuda12.zip` with NVIDIA's CUDA 12 libraries (installed with uv, like the
   CUDA 13 ones); on Linux, or with `--build`, it compiles the engine with a CUDA 12.x toolkit.
 
 ### Opting in

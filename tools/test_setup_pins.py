@@ -303,12 +303,13 @@ class Requirements(unittest.TestCase):
         ran = []
         with tempfile.TemporaryDirectory() as d:
             if stamp is not None:
-                (Path(d) / ".strata-pip.json").write_text(json.dumps(stamp))
+                (Path(d) / ".strata-install.json").write_text(json.dumps(stamp))
             with mock.patch.object(setup.sys, "prefix", d), \
+                    mock.patch.object(setup, "uv_cmd", lambda: ["uv"]), \
                     mock.patch.object(setup, "run", lambda cmd, **kw: ran.append(cmd)), \
                     mock.patch.object(setup, "_installed", lambda name: name in installed):
-                quiet(setup.pip_install, packages, "the packages")
-            after = json.loads((Path(d) / ".strata-pip.json").read_text()) if ran else stamp
+                quiet(setup.uv_install, packages, "the packages")
+            after = json.loads((Path(d) / ".strata-install.json").read_text()) if ran else stamp
         return [c for cmd in ran for c in cmd if "==" in c or c in setup.PY_PACKAGES], after
 
     def test_fresh_install_gets_every_pin(self):
@@ -332,6 +333,51 @@ class Requirements(unittest.TestCase):
         old = [x.replace("tqdm==4.70.1", "tqdm==4.60.0") for x in lines]
         ran, _ = self.pip(old, lines)
         self.assertEqual(ran, ["tqdm==4.70.1"])
+
+    def test_an_install_stamped_by_the_old_pip_run_is_left_alone(self):
+        """An install made before uv (its .strata-pip.json): uv reads that stamp and installs nothing new."""
+        lines = setup.requirement_lines()
+        ran = []
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / ".strata-pip.json").write_text(json.dumps(sorted(lines)))
+            with mock.patch.object(setup.sys, "prefix", d), \
+                    mock.patch.object(setup, "uv_cmd", lambda: ["uv"]), \
+                    mock.patch.object(setup, "run", lambda cmd, **kw: ran.append(cmd)), \
+                    mock.patch.object(setup, "_installed", lambda name: False):
+                quiet(setup.uv_install, lines, "the packages")
+        self.assertEqual(ran, [])
+        self.assertFalse((Path(d) / ".strata-install.json").exists())      # the old stamp is kept, not rewritten
+
+
+class UvCommand(unittest.TestCase):
+    """setup.py installs with uv: uv on PATH, else the uv package in .venv, else pip installs uv once (pinned)."""
+
+    def test_uv_on_path(self):
+        with mock.patch.object(setup.shutil, "which", lambda n: "/usr/local/bin/uv"):
+            self.assertEqual(setup.uv_cmd(), ["/usr/local/bin/uv"])
+
+    def test_uv_installed_in_the_venv(self):
+        with mock.patch.object(setup.shutil, "which", lambda n: None), \
+                mock.patch.object(setup, "_module_present", lambda n: n == "uv"):
+            self.assertEqual(setup.uv_cmd(), [sys.executable, "-m", "uv"])
+
+    def test_no_uv_anywhere_bootstraps_it_with_pip_once(self):
+        ran = []
+        with mock.patch.object(setup.shutil, "which", lambda n: None), \
+                mock.patch.object(setup, "_module_present", lambda n: False), \
+                mock.patch.object(setup, "run", lambda cmd, **kw: ran.append(cmd)):
+            self.assertEqual(setup.uv_cmd(), [sys.executable, "-m", "uv"])
+        self.assertEqual(ran, [[sys.executable, "-m", "pip", "install", "--quiet",
+                                "--disable-pip-version-check", f"uv=={setup.UV_VERSION}"]])
+
+    def test_uv_install_runs_uv_pip_install_into_this_venv(self):
+        ran = []
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.object(setup.sys, "prefix", d), \
+                mock.patch.object(setup.shutil, "which", lambda n: "uv"), \
+                mock.patch.object(setup, "run", lambda cmd, **kw: ran.append(cmd)):
+            quiet(setup.uv_install, ["numpy==2.5.3"], "numpy")
+        self.assertEqual(ran, [["uv", "pip", "install", "--python", sys.executable, "--quiet", "numpy==2.5.3"]])
 
 
 if __name__ == "__main__":

@@ -33,7 +33,7 @@ class Update(unittest.TestCase):
     def run_update(self, have, argv=()):
         a = mock.Mock(**{"build": False, "prebuilt": "URL", **dict(argv)})
         out = io.StringIO()
-        with mock.patch.object(setup, "pip_install") as pip, \
+        with mock.patch.object(setup, "uv_install") as pip, \
                 mock.patch.object(setup, "update_installed_engine") as eng, \
                 mock.patch.object(setup, "refresh_draft_vocab") as dv, \
                 mock.patch.object(setup, "start") as start, \
